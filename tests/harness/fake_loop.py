@@ -210,7 +210,7 @@ class FakeLoop:
         if not self.history:
             self.history.append(self._sample(self.sensor.estimate(self.rover.pose), 0.0, 0.0))
 
-        for _ in range(int(round(seconds * self.loop_hz))):
+        for _ in range(round(seconds * self.loop_hz)):
             est = self.sensor.estimate(self.rover.pose)
             if est.valid:
                 v_mm_s, omega_deg_s = self.follower.step(est)

@@ -229,9 +229,7 @@ class TestMessageQuality:
     def test_every_violation_is_reported_not_just_the_first(self):
         """One startup run should show everything that is wrong, so a config is
         fixed in one pass rather than one invariant at a time."""
-        message = message_for(
-            {"rover.wheel_diameter_mm": 40, "rover.chassis_clearance_mm": 10}
-        )
+        message = message_for({"rover.wheel_diameter_mm": 40, "rover.chassis_clearance_mm": 10})
         assert "wheel_diameter" in message
         assert "chassis_clearance" in message
 

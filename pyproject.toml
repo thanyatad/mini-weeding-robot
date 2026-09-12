@@ -35,6 +35,9 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Markdown is documentation, and in this repo the documentation is the spec.
+# `ruff format` will happily reformat Python fenced in a .md file otherwise.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

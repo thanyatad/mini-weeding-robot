@@ -7,7 +7,6 @@ to make a test pass — fix the implementation.
 
 import csv
 import math
-from pathlib import Path
 
 import pytest
 
@@ -31,7 +30,12 @@ def _golden_vectors() -> list[tuple[float, float, float, float]]:
         if line.strip() and not line.lstrip().startswith("#")
     ]
     return [
-        (float(r["v_mm_s"]), float(r["omega_deg_s"]), float(r["v_left_mm_s"]), float(r["v_right_mm_s"]))
+        (
+            float(r["v_mm_s"]),
+            float(r["omega_deg_s"]),
+            float(r["v_left_mm_s"]),
+            float(r["v_right_mm_s"]),
+        )
         for r in csv.DictReader(lines)
     ]
 

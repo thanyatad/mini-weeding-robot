@@ -116,9 +116,7 @@ class TestClearance:
             load_config(),
             {"row_follower.gains.fake.k_lat": 0.0, "row_follower.gains.fake.k_head": 0.0},
         )
-        sim = FakeLoop(
-            row=straight_row(), start_offset_mm=60, start_heading_deg=15, config=config
-        )
+        sim = FakeLoop(row=straight_row(), start_offset_mm=60, start_heading_deg=15, config=config)
         sim.run(seconds=3.0)
 
         assert sim.min_clearance_mm < 0
@@ -159,9 +157,7 @@ class TestFakeRowSensor:
         rover would have no lookahead at all, and the gains would mean something
         else entirely."""
         sensor = FakeRowSensor(straight_row())
-        offset = sensor._furrow_lateral_offset_mm(
-            Pose(x_mm=0.0, y_mm=0.0, heading_deg=15.0), 180.0
-        )
+        offset = sensor._furrow_lateral_offset_mm(Pose(x_mm=0.0, y_mm=0.0, heading_deg=15.0), 180.0)
         assert offset == pytest.approx(-180.0 * math.tan(math.radians(15.0)))
 
     def test_the_estimate_goes_invalid_when_the_furrow_leaves_the_frame(self):

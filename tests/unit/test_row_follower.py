@@ -7,6 +7,8 @@ If the sign flips anywhere, the feedback becomes positive and the rover leaves
 the furrow *faster* than an uncontrolled one would — not slower.
 """
 
+import dataclasses
+
 import pytest
 
 from controller.config import load_config
@@ -96,7 +98,7 @@ class TestRowEstimate:
 
     def test_it_is_frozen(self):
         est = estimate()
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             est.lateral_err = 0.5  # type: ignore[misc]
 
     @pytest.mark.parametrize(
