@@ -63,8 +63,8 @@ Entry point สำหรับ run และ flash
 invariant 9 ข้อ fail ข้อใดก็ **ไม่ start** พร้อมบอกค่าที่ขัดกันเป็นตัวเลข
 
 ```text
-config_invalid: clear_furrow (290 mm) must exceed
-                body_width (146) + 2 × runaway_budget (60) = 266 mm
+config_invalid: clear_furrow (690 mm) must exceed
+                body_width (520) + 2 × runaway_budget (60) = 640 mm
 ```
 
 นี่ไม่ใช่ความรำคาญ — มันเป็นตัวแทนของ bumper switch ที่ MVP ไม่มี

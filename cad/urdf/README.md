@@ -70,7 +70,7 @@ track_width 430 mm  → ±0.215 m
 |---|---|---|---|
 | `wheel_*` | `continuous` | **ไม่มี** position limit | ล้อหมุนได้ไม่จำกัด |
 | `wheel_*` | velocity limit | 2.616 rad/s | `wheel_v_max_mm_s / (wheel_diameter_mm/2)` |
-| `wheel_*` | effort limit | 10.0 N·m | เพดานแรงบิดต่อเนื่องของเกียร์ (`hardware/bom/poc-v3.md`) |
+| `wheel_*` | effort limit | 10.0 N·m | เพดานแรงบิด **peak/stall** ของเกียร์ (`hardware/bom/poc-v3.md`) — **ไม่ใช่ต่อเนื่อง** เพดานต่อเนื่องคือ 5.0 N·m/ล้อ ซึ่งเป็นค่าที่ `test_total_mass_is_under_the_gearbox_ceiling` (มวล 40 kg) อ้างอิง ไม่ใช่ 10.0 นี้ |
 | `camera_*` | `fixed` | — | — |
 
 ### `continuous` ไม่ใช่ `revolute`

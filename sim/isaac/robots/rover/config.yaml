@@ -25,11 +25,12 @@ wheel_drive:
   stiffness_n_m_per_deg: 0.0
   damping_n_m_s_per_deg: 0.005
 
-  # max_force is NOT authored here on purpose.  It is the gearbox's continuous
-  # torque limit (10 N·m), it comes from the URDF's <limit effort=...>, and
-  # rover_base.usd already carries it.  Restating it here would put a BOM
-  # number in two places, which is exactly the drift the two-layer split
-  # exists to prevent.
+  # max_force is NOT authored here on purpose.  It is the gearbox's PEAK/stall
+  # torque limit (10 N·m) -- NOT the continuous limit, which is 5 N·m per
+  # wheel (hardware/bom/poc-v3.md) and is what the 40 kg mass ceiling rests
+  # on.  It comes from the URDF's <limit effort=...>, and rover_base.usd
+  # already carries it.  Restating it here would put a BOM number in two
+  # places, which is exactly the drift the two-layer split exists to prevent.
 
 friction:
   # ⚠️ THESE VALUES ARE INHERITED FROM A 1.038 kg ROVER AND ARE NOT VALID.

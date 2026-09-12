@@ -246,8 +246,8 @@ consistency simulation.soil.variation_mm == bed.soil_variation_mm
 Error message ต้องบอก **ค่าที่ขัดกันเป็นตัวเลข** ไม่ใช่แค่ชื่อ invariant:
 
 ```text
-config_invalid: clear_furrow (290 mm) must exceed
-                body_width (146) + 2 × runaway_budget (60) = 266 mm
+config_invalid: clear_furrow (690 mm) must exceed
+                body_width (520) + 2 × runaway_budget (60) = 640 mm
                 → เพิ่ม row_spacing_mm หรือลด runaway_budget_mm
 ```
 

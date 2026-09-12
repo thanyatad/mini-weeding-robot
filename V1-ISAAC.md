@@ -61,7 +61,7 @@ V0 ปิดครบ — 572 tests, `pytest -q` ~1.3 s, ไม่ต้อง�
 
 V1 acceptance บังคับว่าต้อง **วัด** `crop_foliage_half_width_mm` จาก asset จริงแล้วบันทึกลง
 `config/rover.yaml` — ค่า `30` ที่ใช้อยู่เป็นการประมาณ และมันไหลต่อไปที่
-`clear_furrow = row_spacing − 2 × 30 = 290` ซึ่งเป็นฐานของ invariant ข้อ 5
+`clear_furrow = row_spacing − 2 × 30 = 690` ซึ่งเป็นฐานของ invariant ข้อ 5
 
 ถ้าวัดแล้วได้มากกว่า 30 → `clear_furrow` แคบลง → **invariant ข้อ 5 อาจ fail**
 นั่นคือพฤติกรรมที่ถูกต้อง ไม่ใช่ bug
@@ -241,7 +241,7 @@ control ทางกายภาพ ต้องมีทั้งใน sim แ
 ### Stage 5 — กล้อง + virtual I/O
 
 ```text
-sensors/camera_front.py       640×480  tilt ~45°   ผูกกับ base_link
+sensors/camera_front.py       640×480  tilt ~50°   ผูกกับ base_link
 sensors/camera_down.py        1280×720 top-down
 sensors/sensor_manager.py
 sensors/estop.py              virtual digital input

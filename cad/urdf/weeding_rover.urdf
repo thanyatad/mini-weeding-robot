@@ -75,7 +75,9 @@
   <!--         z =     wheel_diameter/2 =     0.125  (the belly plane is  -->
   <!--                 the axle plane: ground clearance equals the radius)-->
   <!-- velocity 327 mm/s / 125 mm       = 2.616 rad/s                     -->
-  <!-- effort   gearbox continuous limit = 10.0 N.m                       -->
+  <!-- effort   gearbox PEAK/stall limit = 10.0 N.m (continuous is 5.0    -->
+  <!--          N.m per wheel, hardware/bom/poc-v3.md - the 40 kg mass    -->
+  <!--          ceiling rests on the continuous figure, not this one)    -->
   <!-- ================================================================== -->
 
   <link name="wheel_fl_link">

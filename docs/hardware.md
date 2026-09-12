@@ -10,7 +10,7 @@
 
 | ต้องการ | ไปที่ |
 |---|---|
-| รายการของ / ข้อกำหนดก่อนซื้อ | [hardware/bom/poc-v2.md](../hardware/bom/poc-v2.md) |
+| รายการของ / ข้อกำหนดก่อนซื้อ | [hardware/bom/poc-v3.md](../hardware/bom/poc-v3.md) |
 | ขนาด rover | [hardware/mechanical/dimensions.md](../hardware/mechanical/dimensions.md) |
 | ลำดับประกอบ + ค่าที่ต้องวัด | [hardware/mechanical/assembly.md](../hardware/mechanical/assembly.md) |
 | Pin map + กับดัก ESP32 | [hardware/electrical/wiring.md](../hardware/electrical/wiring.md) |
@@ -106,19 +106,25 @@ duty      = v_side / wheel_v_max_mm_s
 ถ้าล้อข้างใดเกิน `wheel_v_max_mm_s` → **ลดทั้งสองข้างตามอัตราส่วนเดิม**
 การ clip ข้างเดียวเปลี่ยน `omega` ที่ได้จริงโดยเงียบ
 
-### ⚠️ Deadband — เหตุผลที่ `omega_max` เป็น 40 ไม่ใช่ 60
+### ⚠️ Deadband — เหตุผลที่ `omega_max` เป็น 25 ไม่ใช่ 40
 
 มอเตอร์เกียร์ DC **ไม่ออกตัวใต้ ~15% duty**
 
 ```text
-ล้อ 65 mm · มอเตอร์ 100 RPM → wheel_v_max = 340 mm/s
-deadband ≈ 15% ของ 340       → wheel_v_min ≈ 51 mm/s
+ล้อ Ø250 mm · มอเตอร์ ~25 RPM → wheel_v_max = 327 mm/s
+deadband ≈ 15% ของ 327       → ~49 mm/s แต่ค่าที่เก็บไว้คือ 51 mm/s
+                                (เข้มกว่าประมาณการ ยังไม่ได้วัดจริงที่ V3)
 
-ที่ omega = 60 deg/s:  v_left = 37 mm/s  (11%)  ✗ ล้อหยุดหมุนแต่ firmware คิดว่าสั่งแล้ว
-ที่ omega = 40 deg/s:  v_left = 58 mm/s  (17%)  ✓ เหนือ deadband 7 mm/s
+track_width ขยับจาก 120 เป็น 430 mm ในรอบ scale-up — differential ต่อองศาจึงโต
+ขึ้นตาม ทำให้ omega_max เดิม (40 deg/s) ใช้ไม่ได้อีกต่อไป:
 
-เพดานจริงของ omega_max คือ 46 deg/s — เลือก 40 เพื่อให้มี margin
-ไม่ใช่เพราะ 40 เป็นค่าสูงสุดที่ทำได้
+ที่ omega = 40 deg/s:  differential = 150.1 mm/s → v_left = 160−150.1 =  9.9 mm/s (3%)  ✗ ล้อหยุดหมุนแต่ firmware คิดว่าสั่งแล้ว
+ที่ omega = 25 deg/s:  differential =  93.8 mm/s → v_left = 160− 93.8 = 66.2 mm/s (20%) ✓ เหนือ deadband 15.2 mm/s
+
+เพดานจริงของ omega_max ที่ track 430 คือ ~29.0 deg/s — จาก invariant ข้อ 7
+(`controller/startup_checks.py`): v_max − radians(omega) × track/2 >= wheel_v_min
+→ 160 − 51 = 109 → radians(omega) <= 109/215 = 0.50698 → omega <= 29.05°
+เลือก 25 เพื่อให้มี margin ไม่ใช่เพราะ 25 เป็นค่าสูงสุดที่ทำได้
 ```
 
 ล้อข้างในที่หยุดหมุนทำให้ rover เลี้ยวแรงกว่าที่สั่ง **โดยไม่มีสัญญาณบอก** —
@@ -188,7 +194,7 @@ if (millis() - last_drive_ms > COMMAND_TIMEOUT_MS) {
 ค่ามาจาก `config/safety.yaml` `command_timeout_ms: 300` — firmware ต้องไม่ hard-code
 
 ```text
-v_max × command_timeout / 1000 <= runaway_budget      100 × 0.3 = 30 mm <= 60 mm
+v_max × command_timeout / 1000 <= runaway_budget      160 × 0.3 = 48 mm <= 60 mm
 ```
 
 Timeout เป็น **latch** — เมื่อ link กลับมา firmware ต้องรายงาน `command_timeout`
@@ -199,9 +205,9 @@ Timeout เป็น **latch** — เมื่อ link กลับมา firmw
 ## E-stop
 
 ```text
-แบต 3S ──┬── E-stop (latching NC) ── driver ── มอเตอร์
-         │         └──► sense line ──► ESP32 GPIO
-         └── buck 5V ── Pi + ESP32        ◄── ไม่ผ่าน E-stop
+แบต 24V LiFePO4 ──┬── E-stop (latching NC) ── driver ── มอเตอร์
+                  │         └──► sense line ──► ESP32 GPIO
+                  └── buck 5V ── Pi + ESP32        ◄── ไม่ผ่าน E-stop
 ```
 
 E-stop **ตัด motor rail ทางไฟ** ไม่ใช่บอก firmware ให้หยุด
