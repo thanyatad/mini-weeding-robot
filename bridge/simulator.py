@@ -97,6 +97,10 @@ class Esp32Emulator:
         self.drives_applied = 0
         self.drives_discarded = 0
         self.malformed_lines = 0
+        #: ``(type, id)`` of every discrete command obeyed, in order.  Once the
+        #: codec has settled the ack there is nothing left for a test to look
+        #: at, and "was the brake actually commanded" is worth being able to ask.
+        self.discrete_commands: list[tuple[str, int]] = []
 
     @classmethod
     def from_config(cls, config: dict[str, Any], **kwargs: Any) -> Esp32Emulator:
@@ -164,6 +168,7 @@ class Esp32Emulator:
         self._omega_deg_s = 0.0
         self._timed_out = False
         self._estop_latched = self._estop_sense
+        self.discrete_commands.clear()
 
     # -- one loop round ----------------------------------------------------
 
@@ -236,6 +241,7 @@ class Esp32Emulator:
     def _apply_discrete(self, command: dict[str, Any]) -> None:
         command_type = command["type"]
         command_id = command["id"]
+        self.discrete_commands.append((command_type, command_id))
 
         if command_type == "stop":
             # Controlled stop, brake held.  Not a latch: drive may follow.
