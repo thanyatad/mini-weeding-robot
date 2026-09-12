@@ -1,0 +1,26 @@
+# กดปุ่ม E-stop ระหว่างวิ่ง
+#
+# ปุ่มตัด motor rail ทางไฟ (§11.4) — software ไม่ได้เป็นคนหยุด rover
+# สิ่งที่ทดสอบคือ controller "รู้ตัว" ว่าเกิดอะไรขึ้น: สาย sense → Event.ESTOP
+#
+# `motors_enabled` ไม่ใช่ key ของ get_drive_state() แต่อยู่ใน rover_state telemetry
+# scenario นี้จึงต้องรันกับ emulator ไม่ใช่ FakeLoop
+#
+# `commanded_after_estop` อ่านจาก telemetry คือสิ่งที่ "บอร์ด" บอกว่ากำลังทำอยู่
+# ไม่ใช่ echo ของ controller ซึ่งยังค้างคำสั่ง drive ตัวสุดท้ายที่ส่งไป
+
+name: estop-during-drive
+
+bed:
+  bed_length_mm: 2000
+
+events:
+  - at: 1.5
+    set:
+      estop: true
+
+expect:
+  final_state: ESTOP
+  error_code: emergency_stop
+  motors_enabled: false
+  commanded_after_estop: { v_mm_s: 0, omega_deg_s: 0 }

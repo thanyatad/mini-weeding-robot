@@ -199,3 +199,24 @@ def test_an_error_from_the_board_comes_back_as_a_fault(rover, board, clock):
 
     assert fault.code == "command_timeout"
     assert fault.id is None
+
+
+def test_last_state_carries_the_commanded_echo_the_board_published(rover, board, clock):
+    """``last_state`` promises "the fields the board publishes", and ``commanded``
+    is one of them.  It is not the same number as get_drive_state()["commanded"]:
+    that one is what this process asked for, and this one is what the board says
+    it is doing.  They part company exactly when it matters — a latched board
+    reports zero while the controller's own echo still holds the last drive it
+    sent."""
+    rover.drive(100.0, -12.5)
+    board.tick(clock.now_ms)
+    rover.poll(clock.now_ms)
+
+    assert rover.last_state["commanded"] == {"v_mm_s": 100.0, "omega_deg_s": -12.5}
+
+    board.press_estop()
+    board.tick(clock.now_ms + 100.0)
+    rover.poll(clock.now_ms + 100.0)
+
+    assert rover.last_state["commanded"] == {"v_mm_s": 0.0, "omega_deg_s": 0.0}
+    assert rover.get_drive_state()["commanded"] == {"v_mm_s": 100.0, "omega_deg_s": -12.5}

@@ -1,0 +1,26 @@
+# Pi <-> ESP32 หลุดกลางแถว → มอเตอร์ต้องดับภายใน command_timeout_ms
+#
+# ชั้น safety ที่ทดสอบคือชั้นของ ESP32 (§5.6) — ต้องทำงานได้โดยไม่พึ่ง Pi
+# สายขาดทั้งสองทาง Pi จึงไม่ได้ยินอะไรเลยและต้องสรุปเอาจาก link_age_ms
+#
+# ตัวเลขใน expect คือ "ข้อกำหนด" ไม่ใช่ "สิ่งที่วัดได้"
+# 300 คือ safety.command_timeout_ms เขียนไว้ตรงนี้โดยเจตนา ไม่ได้อ่านจาก config
+# ถ้าอ่านจาก config มันจะเห็นด้วยกับตัวเองตลอดไป รวมถึงวันที่มีคนขยับค่านั้น
+
+name: link-lost
+
+bed:
+  bed_length_mm: 2000
+
+events:
+  - at: 3.0
+    set:
+      link: cut
+
+expect:
+  final_state: ERROR
+  error_code: link_lost
+  stop_reason: null
+  motors_enabled: false
+  motors_died_within_ms: { max: 300 }
+  motors_died_before_link_lost: true

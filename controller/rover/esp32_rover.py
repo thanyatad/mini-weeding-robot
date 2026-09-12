@@ -87,6 +87,7 @@ class Esp32Rover(DriveStateOwner):
         self._last_seq = 0
         self._motors_enabled = False
         self._uptime_ms = 0
+        self._published_command = {"v_mm_s": 0.0, "omega_deg_s": 0.0}
 
     @classmethod
     def from_config(
@@ -132,8 +133,17 @@ class Esp32Rover(DriveStateOwner):
 
     @property
     def last_state(self) -> dict[str, Any]:
-        """The last telemetry seen, in the fields the board publishes."""
+        """The last telemetry seen, in the fields the board publishes.
+
+        ``commanded`` here is the board's account of what it is doing, which is
+        not the same thing as ``get_drive_state()["commanded"]`` — that is this
+        process's echo of what it asked for.  They part company exactly where
+        it matters: a latched board reports zero while the controller's echo
+        still holds the last drive it sent into a link that is no longer being
+        obeyed.
+        """
         return {
+            "commanded": dict(self._published_command),
             "last_seq": self._last_seq,
             "estop": self._estop,
             "motors_enabled": self._motors_enabled,
@@ -184,6 +194,10 @@ class Esp32Rover(DriveStateOwner):
             )
 
         self._last_seq = last_seq
+        self._published_command = {
+            "v_mm_s": float(state["commanded"]["v_mm_s"]),
+            "omega_deg_s": float(state["commanded"]["omega_deg_s"]),
+        }
         self._estop = bool(state["estop"])
         self._motors_enabled = bool(state["motors_enabled"])
         self._uptime_ms = int(state["uptime_ms"])
