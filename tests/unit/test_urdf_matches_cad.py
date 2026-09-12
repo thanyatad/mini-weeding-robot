@@ -186,10 +186,54 @@ def test_wheel_collision_is_a_cylinder_sized_from_cad(name):
     )
 
 
-def test_base_link_collision_is_a_box():
-    geometry = _link("base_link").find("collision").find("geometry")
-    assert geometry.find("box") is not None
-    assert geometry.find("mesh") is None
+def test_base_link_collision_is_boxes_that_clear_the_wheels():
+    """Two boxes and a cylinder -- not one box -- and none may be a mesh.
+
+    The frame necks in below the wheel tops -- chassis_plate_width is the
+    wheel inner face spacing -- and the body above them overhangs.  The mast
+    is a separate thin tube rising above the body, carrying both cameras.  One
+    box cannot describe that shape without either clipping the wheels or
+    throwing away the overhang, and the mast is not box-shaped at all, so the
+    collision is the two boxes plus the cylinder the rover actually has.
+
+    cad/urdf/README.md#collision still holds: primitives only.
+    """
+    cad = _cad()
+    collisions = _link("base_link").findall("collision")
+    assert len(collisions) == 3, f"expected 3 base_link collisions, found {len(collisions)}"
+
+    boxes = []
+    cylinders = []
+    for collision in collisions:
+        geometry = collision.find("geometry")
+        assert geometry.find("mesh") is None, "base_link collision must not be a mesh"
+        box = geometry.find("box")
+        cylinder = geometry.find("cylinder")
+        assert (box is not None) != (cylinder is not None), (
+            "each collision must be exactly one of box or cylinder"
+        )
+        if box is not None:
+            _, _, z = _xyz(collision.find("origin"))
+            _, width, height = (float(v) for v in box.get("size").split())
+            boxes.append((z - height / 2, z + height / 2, width))
+        else:
+            cylinders.append(cylinder)
+
+    assert len(boxes) == 2, f"expected 2 box collisions, found {len(boxes)}"
+    assert len(cylinders) == 1, f"expected 1 cylinder collision (the mast), found {len(cylinders)}"
+
+    wheel_top = cad["wheel_diameter_mm"] / MM_PER_M
+    inner_faces = (cad["track_width_mm"] - cad["wheel_width_mm"]) / MM_PER_M
+    for bottom, _top, width in boxes:
+        if bottom < wheel_top - 1e-9:
+            assert width <= inner_faces + 1e-9, (
+                f"a collision box {width * MM_PER_M:.0f} mm wide reaches below the "
+                f"wheel tops, where only {inner_faces * MM_PER_M:.0f} mm fits"
+            )
+        assert bottom >= cad["chassis_clearance_mm"] / MM_PER_M - 1e-9, (
+            f"a collision box bottom at {bottom * MM_PER_M:.0f} mm is below the belly "
+            f"plane at {cad['chassis_clearance_mm']:.0f} mm"
+        )
 
 
 @pytest.mark.parametrize("name", ["camera_front", "camera_down"])
@@ -255,11 +299,18 @@ def test_every_mesh_reference_resolves():
 
 
 def test_total_mass_is_under_the_gearbox_ceiling():
-    """2.3 kg comes from the 5 kg.cm continuous limit of the 250:1 gearbox
-    climbing a 15 mm clod on a 35 mm wheel radius - hardware/bom/poc-v2.md."""
+    """40 kg is what 4 x 5 N.m continuous moves up a 15 degree grade on a
+    0.125 m wheel radius, against rolling resistance - hardware/bom/poc-v3.md.
+
+    The old ceiling was 2.3 kg, from a 250:1 micro gearbox that is not on this
+    machine.  The ceiling is a property of the drivetrain, so it moved with it;
+    it is not a budget anyone may relax.  The estimate is 35 kg +/-20%, and the
+    upper end of that band is 42 kg -- so this test is expected to fail if the
+    real parts come in heavy, and the answer then is a stronger motor.
+    """
     total = sum(
         float(link.find("inertial").find("mass").get("value"))
         for link in _robot().findall("link")
         if link.find("inertial") is not None
     )
-    assert total <= 2.3, f"URDF total mass {total:.3f} kg exceeds the 2.3 kg ceiling"
+    assert total <= 40.0, f"URDF total mass {total:.3f} kg exceeds the 40 kg ceiling"
