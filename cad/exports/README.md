@@ -1,8 +1,15 @@
 # cad/exports
 
-Export จาก Fusion — **ทุกไฟล์ที่นี่เป็น artifact ไม่ใช่ต้นฉบับ**
+โฟลเดอร์นี้มีสองแหล่งที่มา และกฎคนละข้อ
 
-ต้นฉบับคือ `cad/fusion/rover.f3d` เสมอ อย่าแก้ไฟล์ในโฟลเดอร์นี้โดยตรง
+| | ต้นฉบับ | แก้ยังไง |
+|---|---|---|
+| `meshes/` | `cad/parameters/parameters.csv` | รัน `python tools/generate_sim_meshes.py` — **ห้ามแก้ไฟล์ด้วยมือ** |
+| `step/` · `stl/` | `cad/fusion/rover.f3d` | แก้ user parameter ใน Fusion แล้ว export ใหม่ |
+
+`meshes/` เป็น simplified visual + collision สำหรับ simulator เท่านั้น
+`step/` และ `stl/` เป็น geometry สำหรับผลิต — ยังว่างอยู่จนกว่า Fusion assembly
+จะถูกแก้เป็น V0 ดู [../README.md](../README.md)
 
 ---
 

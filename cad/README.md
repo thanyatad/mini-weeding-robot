@@ -1,5 +1,21 @@
 # cad
 
+> ### ⚠️ `cad/fusion/rover.f3d` ยังเป็นรถคันเก่า (ล้อ Ø70)
+>
+> `parameters.csv` ถูกอัปเดตเป็น Rover Base V0 (650 × 520, ล้อ Ø250) แล้ว
+> แต่ **Fusion assembly ยังไม่ถูกแก้** — เป็นงานมือที่ยังไม่มีใครทำ
+>
+> ```text
+> parameters.csv · urdf/ · exports/meshes/   ✓ V0 650 × 520
+> fusion/rover.f3d · exports/step/ · exports/stl/   ✗ ยังไม่มี V0
+> ```
+>
+> วิธีทำต่อ: เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
+> (อย่าแก้ sketch ตรง ๆ) แล้ว export `step/` + `stl/` ใหม่
+>
+> `exports/meshes/` **ไม่ต้อง** export จาก Fusion อีกต่อไป —
+> `tools/generate_sim_meshes.py` สร้างจาก `parameters.csv` ให้แล้ว
+
 Mechanical source of truth — **เรขาคณิตทั้งหมดต้นทางที่ `cad/parameters/parameters.csv`**
 งานผลิต (STEP / STL) มาจาก Fusion โดยตรง แต่ **ไม่ใช่ต้นทางของ geometry ที่ sim ใช้**
 ดู [Pipeline](#pipeline) ด้านล่าง

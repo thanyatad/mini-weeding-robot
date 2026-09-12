@@ -48,12 +48,13 @@ hardware/
 ขนาดทุกตัวใน `mechanical/dimensions.md` เป็น **derived จาก CAD**
 
 ```text
-cad/fusion/rover.f3d
-   └─► cad/parameters/parameters.csv   ◄── ต้นทาง
-          ├─► hardware/mechanical/dimensions.md   (เอกสาร)
-          ├─► config/rover.yaml                   (runtime)
-          ├─► cad/urdf/weeding_rover.urdf         (simulation)
-          └─► config/drive_mixing_vectors.csv     (firmware + sim)
+cad/parameters/parameters.csv   ◄── ต้นทาง
+   ├─► hardware/mechanical/dimensions.md   (เอกสาร)
+   ├─► config/rover.yaml                   (runtime)
+   ├─► cad/urdf/weeding_rover.urdf         (simulation)
+   └─► config/drive_mixing_vectors.csv     (firmware + sim)
+
+cad/fusion/rover.f3d ──► cad/exports/step/ · cad/exports/stl/   (งานผลิตเท่านั้น)
 ```
 
 ถ้าตัวเลขที่นี่ขัดกับ `parameters.csv` → **CSV ถูก** แล้วเอกสารนี้ล้าสมัย
@@ -77,7 +78,7 @@ pytest tests/unit/test_cad_config_sync.py
 | `body_width_mm` (จุดกว้างสุด) | หลังใส่ล้อ | invariant ข้อ 5 ผ่านโดยที่ล้อยังเบียดใบพืช |
 | `chassis_clearance_mm` (พร้อมโหลด) | หลังประกอบครบ | ท้องครูดยอดดินที่ invariant บอกว่าผ่าน |
 | `crop_foliage_half_width_mm` | V1 asset พืช | กระทบ invariant ข้อ 5 **และ** corridor พร้อมกัน |
-| `soil_variation_mm` | หลังปรับหน้าดิน | ล้อ 65 mm ไม่พอ (margin เหลือ 5 mm) |
+| `soil_variation_mm` | หลังปรับหน้าดิน | เกิน 62 mm → invariant `wheel_diameter ≥ 4 × soil_variation` ไม่ผ่าน (ล้อ Ø250 ให้ margin 190 mm ที่ 15 mm — กว้างกว่าเดิมมาก ไม่ใช่จุดเสี่ยงหลักของเครื่องนี้แล้ว) |
 | `runaway_budget_mm` | หลังวางลงแปลง | ค่าความปลอดภัยหลักของ MVP |
 | FOV กล้องล่างจริง | ก่อนสั่งกล้อง | เห็นร่องไม่ครบ → ใบพืชผลถูกนับเป็นวัชพืช |
 | `error_budget_mm` (homography) | หลัง calibrate | ตัวเลขใน weed log ไม่มีความหมาย |
