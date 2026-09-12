@@ -34,7 +34,7 @@ track_width_mm,120,mm,ระยะกึ่งกลางล้อซ้าย�
 wheelbase_mm,120,mm,ระยะกึ่งกลางเพลาหน้าถึงกึ่งกลางเพลาหลัง
 wheel_diameter_mm,70,mm,เส้นผ่านศูนย์กลางล้อรวมยาง
 wheel_width_mm,25,mm,ความกว้างหน้ายาง
-motor_mount_pitch_mm,18,mm,ระยะรูยึดมอเตอร์
+motor_mount_pitch_mm,15,mm,ระยะรูยึดมอเตอร์
 camera_front_height_mm,180,mm,ความสูงเหนือ soil reference
 camera_front_tilt_deg,45,deg,มุมก้มจากแนวนอน
 camera_front_offset_x_mm,90,mm,เลื่อนไปข้างหน้าจาก base_link
