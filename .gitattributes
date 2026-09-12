@@ -1,0 +1,24 @@
+# .gitattributes — Git LFS สำหรับไฟล์ binary ของ CAD และ USD
+#
+# ตั้งตาม cad/README.md#git-lfs — ต้องตั้ง **ก่อน** commit แรกที่มีไฟล์จริง
+# ย้ายทีหลังต้องเขียนประวัติใหม่ทั้ง repo
+#
+# ไม่อยู่ใน LFS โดยเจตนา — ต้องการ diff ที่อ่านได้ตอน review:
+#   cad/parameters/parameters.csv   ที่ที่การเปลี่ยนขนาดจะปรากฏ
+#   cad/urdf/weeding_rover.urdf     links · joints · limits
+#
+# sim/isaac/robots/rover/rover_base.usd ไม่ต้องสน — gitignore อยู่แล้ว (generated)
+
+# CAD — master + exports
+*.f3d  filter=lfs diff=lfs merge=lfs -text
+*.step filter=lfs diff=lfs merge=lfs -text
+*.stp  filter=lfs diff=lfs merge=lfs -text
+*.stl  filter=lfs diff=lfs merge=lfs -text
+
+# Mesh สำหรับ sim
+*.obj  filter=lfs diff=lfs merge=lfs -text
+*.dae  filter=lfs diff=lfs merge=lfs -text
+
+# USD — scene · rover · asset พืชผล/วัชพืช
+*.usd  filter=lfs diff=lfs merge=lfs -text
+*.usdc filter=lfs diff=lfs merge=lfs -text
