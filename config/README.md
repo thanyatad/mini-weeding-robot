@@ -23,43 +23,50 @@
 
 ```yaml
 rover:
-  track_width_mm: 120          # derived: cad track_width
-  wheelbase_mm: 120            # derived: cad wheelbase
-  body_width_mm: 145           # derived: cad body_width  (รวมล้อ = track + wheel_width)
-  wheel_diameter_mm: 70        # derived: cad wheel_diameter
-  chassis_clearance_mm: 35     # derived: cad chassis_clearance
+  track_width_mm: 430          # derived: cad track_width
+  wheelbase_mm: 400            # derived: cad wheelbase
+  body_width_mm: 520           # derived: cad body_width  (รวมล้อ = track + wheel_width)
+  wheel_diameter_mm: 250       # derived: cad wheel_diameter
+  chassis_clearance_mm: 125    # derived: cad chassis_clearance
 
   drive:
-    v_max_mm_s: 100
-    omega_max_deg_s: 40
-    wheel_v_max_mm_s: 202      # derived: cad wheel_diameter + มอเตอร์ 55 RPM
+    v_max_mm_s: 160
+    omega_max_deg_s: 25
+    wheel_v_max_mm_s: 327      # derived: cad wheel_diameter + มอเตอร์ 25 RPM (poc-v3.md)
     wheel_v_min_mm_s: 51       # deadband — ต้องวัดจริงที่ V3
 
 bed:
   soil_variation_mm: 15
-  row_spacing_mm: 350
+  row_spacing_mm: 750
   crop_foliage_half_width_mm: 30    # ประมาณ — ต้องวัดจาก asset พืชที่ V1
 ```
 
-### `omega_max_deg_s` เป็น 40 ไม่ใช่ 60 — เพราะ deadband ของมอเตอร์ DC
+### `omega_max_deg_s` เป็น 25 — เลือกจากสมรรถนะการเลี้ยว ไม่ใช่จาก deadband โดยตรง
+
+`omega_max = 25 deg/s` หมายถึงหมุน 180° ใน 7.2 วินาที ซึ่งเหมาะกับเครื่อง 35 kg —
+skid steer ที่ track 430 mm บนยาง Ø250 เสียดสีด้านข้างกินแรงบิดจริง (design §6.1)
+เลือกก่อนแล้วจึงบีบหน้าต่างความเร็วมอเตอร์ ไม่ใช่ไล่หาจากมอเตอร์ก่อน
 
 ```text
-ล้อ 70 mm → เส้นรอบวง 220 mm
-มอเตอร์ 12 V ~55 RPM (Pololu 20D 250:1) → ความเร็วล้อสูงสุด 202 mm/s
-`wheel_v_min_mm_s` ใน config เก็บไว้ที่ 51 ซึ่งเข้มกว่า 15% duty ของมอเตอร์ตัวนี้ (30 mm/s)
+`omega_max_deg_s: 25` ไม่ใช่ค่าที่เลือกเพราะชอบ — differential ของล้อเป็นสัดส่วนกับ
+track ซึ่งโตจาก 120 เป็น 430 (3.6 เท่า) ที่ 40 deg/s เดิม ล้อข้างในจะได้
+160 - 150 = 10 mm/s ซึ่งอยู่ใต้ deadband: ล้อหยุดนิ่งขณะที่ ESP32 ยังคิดว่ากำลังขับ
+และรถเลี้ยวแรงกว่าที่สั่งโดยไม่มีอะไรส่งสัญญาณ
 
-ที่ omega_max = 60:  differential = 62.8 mm/s → v_left = 37.2 mm/s  ✗ ใต้ 51
-ที่ omega_max = 40:  differential = 41.9 mm/s → v_left = 58.1 mm/s  ✓ เหนือ 51
+ที่ omega_max = 25:  differential = 93.8 mm/s → v_left = 160 - 93.8 = 66.2 mm/s  ✓ เหนือ 51 (margin 15.2)
 
-⚠️ ข้อโต้แย้งนี้อ่อนลงเมื่อเปลี่ยนมาใช้มอเตอร์ที่ช้ากว่า — ที่ 202 mm/s ตัว
-omega_max = 60 ให้ 18% duty ซึ่ง**ผ่าน**โมเดล 15% แต่ยังตกเพราะ `wheel_v_min`
-ถูกเก็บไว้ที่ค่าเข้มกว่าจนกว่าจะวัดจริงที่ V3
-
-ถ้า V3 วัด deadband ได้ต่ำจริง `omega_max` ขยับขึ้นได้ **แต่ต้องวัดก่อน ไม่ใช่เดา**
-
-เพดานจริงของ `omega_max` คือ **46 deg/s** (ที่ 46.8 ค่า `v_left` จะแตะ 51 พอดี) —
-เลือก 40 เพื่อให้มี margin ไม่ใช่เพราะ 40 เป็นค่าสูงสุดที่ทำได้
+เพดานจริงของ `omega_max` ที่ track 430 คือ **~29.0 deg/s** (ที่ 29.05° ค่า `v_left`
+จะแตะ 51 พอดี) — เลือก 25 เพื่อให้มี margin ไม่ใช่เพราะ 25 เป็นค่าสูงสุดที่ทำได้
 ```
+
+`v_max_mm_s: 160` เพดานจาก runaway budget คือ 200 (60 mm / 0.3 s) เลือก 160
+เพราะมันดัน margin ของ invariant ข้อ 7 จาก 5.2 เป็น 15.2 mm/s ซึ่งเป็นข้อเดียว
+ที่พึ่งค่าที่ยังไม่ได้วัด
+
+`wheel_v_min_mm_s: 51` ถูกเก็บไว้เท่าเดิมโดยเจตนาแม้เปลี่ยนมอเตอร์ทั้งชั้น — 15%
+duty ของ 327 ให้ 49 แต่ค่าที่เข้มกว่าคือค่าที่เก็บ เหมือนที่ poc-v2 ทำไว้ เกียร์
+planetary มีชั้นเฟืองมาก stiction สูง deadband จริงอาจสูงกว่า 15% ไม่ใช่ต่ำกว่า
+เก็บ 51 ไว้จนกว่าจะวัดจริงที่ V3
 
 ถ้าล้อข้างในอยู่ใน deadband มันจะ**หยุดหมุนขณะที่ ESP32 คิดว่ากำลังสั่งให้หมุน** —
 rover จะเลี้ยวแรงกว่าที่สั่งโดยไม่มีสัญญาณบอก
@@ -67,10 +74,23 @@ rover จะเลี้ยวแรงกว่าที่สั่งโด�
 ### `row_spacing_mm` ไม่ใช่ความกว้างที่ rover วิ่งได้
 
 ```text
-clear_furrow = row_spacing − 2 × crop_foliage_half_width = 350 − 60 = 290 mm
+clear_furrow = row_spacing − 2 × crop_foliage_half_width = 750 − 60 = 690 mm
 ```
 
 invariant ทุกข้อที่เกี่ยวกับช่องว่างด้านข้างใช้ `clear_furrow` **ไม่ใช่** `row_spacing`
+
+### `crop_foliage_half_width_mm` คือ margin ของ invariant ข้อ 5 ทั้งก้อน
+
+```text
+row_spacing 750 ผ่านตราบใดที่ crop_foliage_half_width < 55 mm
+ถ้า V1 วัดได้ 55+ → row_spacing ต้องเป็น 800+
+
+นี่ไม่ใช่การแก้ config — เป็นข้อจำกัดว่าแปลงต้องปลูกห่างเท่าไร
+```
+
+รถกว้างรวมล้อ 520 mm บังคับว่าแถวต้องห่างเท่าไร แถว 750 mm ที่ใบพืชกว้างข้างละ
+30 mm แปลว่าพืชระยะต้นอ่อน ซึ่งเป็นช่วงที่กำจัดวัชพืชอยู่แล้ว จึงสอดคล้องกัน
+แต่ margin ทั้งหมดของ invariant ข้อ 5 (50 mm) ถูกใช้จ่ายไปกับค่านี้ที่ยังไม่ได้วัด
 
 ---
 
@@ -170,7 +190,7 @@ V0 พิสูจน์ได้แค่ว่า *ตรรกะ* เปร�
 ### `max_lateral_error_mm` กำหนดความกว้าง corridor
 
 ```text
-corridor = clear_furrow − 2 × max_lateral_error_mm = 290 − 80 = 210 mm
+corridor = clear_furrow − 2 × max_lateral_error_mm = 690 − 80 = 610 mm
 ```
 
 เป็นแถบที่รับประกันว่าอยู่ในร่องแม้ rover เบี่ยงเต็มพิสัย — สีเขียวในแถบนี้
@@ -184,8 +204,8 @@ corridor = clear_furrow − 2 × max_lateral_error_mm = 290 − 80 = 210 mm
 
 ```yaml
 row_follower:
-  v_mm_s: 100
-  omega_max_deg_s: 40
+  v_mm_s: 160
+  omega_max_deg_s: 25
 
   gains:
     fake:  {k_lat: 45.0, k_head: 25.0}
@@ -236,7 +256,7 @@ simulation:
     bed_length_mm: 2000
     crop_rows: 3
     crop_spacing_mm: 80
-    row_spacing_mm: 350
+    row_spacing_mm: 750
     weed_count: 20
 
   randomization:
@@ -325,36 +345,41 @@ logging:
 พร้อมบอกค่าที่ขัดกันเป็นตัวเลข ไม่ใช่ warning
 
 ```text
-safety      v_max × command_timeout/1000        <= runaway_budget        30 <= 60   ok
-safety      v_max × row_loss_frames/loop_hz     <= runaway_budget        30 <= 60   ok
-geometry    wheel_diameter        >= 4 × soil_variation                  70 >= 60   ok
-geometry    chassis_clearance     >  soil_variation                      35 >  15   ok
-geometry    clear_furrow          >  body_width + 2 × runaway_budget    290 > 265   ok
-drive       v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 202  ok
-drive       v − omega_max_rad × track/2  >= wheel_v_min                58.1 >=  51
+safety      v_max × command_timeout/1000        <= runaway_budget         48 <= 60   ok
+safety      v_max × row_loss_frames/loop_hz     <= runaway_budget         48 <= 60   ok
+geometry    wheel_diameter        >= 4 × soil_variation                  250 >= 60   ok
+geometry    chassis_clearance     >  soil_variation                      125 >  15   ok
+geometry    clear_furrow          >  body_width + 2 × runaway_budget     690 > 640   ok
+drive       v + omega_max_rad × track/2  <= wheel_v_max               253.8 <= 327  ok
+drive       v − omega_max_rad × track/2  >= wheel_v_min                66.2 >=  51
 config      gains[backend] ไม่เป็น null
 consistency simulation.soil.variation_mm == bed.soil_variation_mm
 
 โดย clear_furrow = row_spacing − 2 × crop_foliage_half_width
 ```
 
-### ข้อ `drive` ตัวล่างมี margin แค่ 7.1 mm/s
+ข้อ geometry ทั้งสองข้อเคยเป็นข้อที่คับที่สุดของเครื่องเดิม — ล้อ Ø250 และ
+ท้องรถ 125 mm ปลดทั้งคู่ทิ้ง (margin 190 mm และ 110 mm ตามลำดับ)
+**`clear_furrow > body_width + 2 × runaway_budget` กลายเป็นข้อที่คับที่สุดแทน**
+(margin 50 mm) — ดู [§`crop_foliage_half_width_mm`](#crop_foliage_half_width_mm-คือ-margin-ของ-invariant-ข้อ-5-ทั้งก้อน)
+
+### ข้อ `drive` ตัวล่างมี margin 15.2 mm/s
 
 `wheel_v_min_mm_s = 51` เป็นค่าประมาณจาก 15% duty **ยังไม่ได้วัดจากมอเตอร์จริง**
 
-ถ้าวัดจริงที่ V3 ได้เกิน **58 mm/s** → **ต้องลด `omega_max` ลงอีก**
+ถ้าวัดจริงที่ V3 ได้เกิน **66.2 mm/s** → **ต้องลด `omega_max` ลงอีก**
 **ห้ามลด `wheel_v_min` เพื่อให้ผ่าน** — ค่านั้นเป็นคุณสมบัติของมอเตอร์ ไม่ใช่ค่าที่เราเลือก
 
 ### ตัวเลขที่ invariant จับได้ตอนเขียน spec
 
-สามชุดนี้ถูกแก้เพราะลองคูณเลขแล้วขัดกันเอง ไม่ใช่เพราะคิดว่าจะตั้งผิด:
+ชุดนี้ถูกแก้เพราะลองคูณเลขแล้วขัดกันเอง ไม่ใช่เพราะคิดว่าจะตั้งผิด:
 
 | แก้อะไร | จาก → เป็น | invariant ที่จับได้ |
 |---|---|---|
-| `row_spacing_mm` | 250 → 350 | `clear_furrow > body_width + 2 × runaway_budget` |
-| `omega_max_deg_s` | 60 → 40 | `v − omega_max_rad × track/2 >= wheel_v_min` |
+| `row_spacing_mm` | 250 → 350 → **750** | `clear_furrow > body_width + 2 × runaway_budget` — 350 มาจากรอบ MVP เดิม (rover 145 mm), 750 มาจากรอบ scale-up นี้ (rover 520 mm) |
+| `omega_max_deg_s` | 60 → 40 | `v − omega_max_rad × track/2 >= wheel_v_min` — ที่รอบ MVP เดิม (`track_width 120`) ปัจจุบันคือ **25** ที่ `track_width 430` (ดูเหตุผลข้างบน) |
 | นิยามข้อ 5 | `row_spacing` → `clear_furrow` | ใบพืชกินร่องข้างละ 30 mm ที่สูตรเดิมมองไม่เห็น |
-| `track_width_mm` | 140 → 120 | `body_width` ต้องเป็นความกว้าง**รวมล้อ** (`track + wheel_width`) ไม่ใช่แค่แชสซี — ที่ 140 เหลือ margin แค่ 4 mm |
+| `track_width_mm` | 140 → 120 | `body_width` ต้องเป็นความกว้าง**รวมล้อ** (`track + wheel_width`) ไม่ใช่แค่แชสซี — ที่ 140 เหลือ margin แค่ 4 mm (ประวัติของเครื่อง 145 mm เดิม ก่อนรอบ scale-up นี้ที่ `track_width` เป็น 430) |
 
 ---
 

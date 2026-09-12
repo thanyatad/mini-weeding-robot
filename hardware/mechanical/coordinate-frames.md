@@ -54,8 +54,8 @@ log นับ "การตรวจจับ" ไม่ใช่ "จำนว�
          ┊
          ┊  ไม่มี transform ที่ runtime
          ┊
-       rover  ──┬──► camera_front     fixed, tilt 45°, สูง 180 mm
-                └──► camera_down      fixed, tilt 0°,  สูง 220 mm
+       rover  ──┬──► camera_front     fixed, tilt 50°, สูง 850 mm
+                └──► camera_down      fixed, tilt 0°,  สูง 850 mm
 ```
 
 `bed` ยังมีอยู่ในเอกสารและใน sim (Isaac รู้ ground truth) แต่ **controller ไม่รู้** —
@@ -113,22 +113,22 @@ Z = 0               soil reference plane
 ### ความกว้างที่ rover ใช้จริงไม่ใช่ `row_spacing`
 
 ```text
-row_spacing               350 mm   กึ่งกลางแถวถึงกึ่งกลางแถว
+row_spacing               750 mm   กึ่งกลางแถวถึงกึ่งกลางแถว
 crop_foliage_half_width    30 mm   ใบยื่นออกจากกึ่งกลางแถวข้างละเท่านี้
-clear_furrow              290 mm   350 − 2 × 30   ◄── ค่าที่ invariant ใช้
+clear_furrow              690 mm   750 − 2 × 30   ◄── ค่าที่ invariant ใช้
 ```
 
-ช่องว่างข้างละ `(290 − 146) / 2 = 72 mm` สำหรับ rover กว้างรวมล้อ 146 mm
+ช่องว่างข้างละ `(690 − 520) / 2 = 85 mm` สำหรับ rover กว้างรวมล้อ 520 mm
 
-`body_width` = **จุดกว้างสุด** = `track_width 120 + wheel_width 26` ไม่ใช่ความกว้างแชสซี (140 mm) — ส่วนที่ชนใบพืชคือล้อ ไม่ใช่ตัวถัง
+`body_width` = **จุดกว้างสุด** = `track_width 430 + wheel_width 90` ไม่ใช่ความกว้างโครงช่วงล้อ (340 mm) — ส่วนที่ชนใบพืชคือล้อ ไม่ใช่ตัวถัง
 
 ---
 
 ## `camera_front` — ไม่มี extrinsic ที่ต้องแม่น
 
 ```text
-ตำแหน่งใน rover frame:  x = +90 mm,  z = +180 mm,  tilt 45° ก้มลง
-lookahead = 180 / tan(45°) = 180 mm ข้างหน้า
+ตำแหน่งใน rover frame:  x = 0,  z = +850 mm,  tilt 50° ก้มลง
+lookahead = 850 / tan(50°) = 713 mm ข้างหน้า
 ```
 
 **ไม่ calibrate** — `RowEstimate` เป็นค่า image-space ล้วน:
@@ -160,8 +160,11 @@ focal length ความสูง หรือมุมก้มเลย
 ## `camera_down` — ตัวเดียวที่ calibrate
 
 ```text
-ตำแหน่งใน rover frame:  x = 0,  z = +220 mm,  tilt 0° (มองตรงลง)
+ตำแหน่งใน rover frame:  x = 0,  z = +850 mm,  tilt 0° (มองตรงลง)
 ```
+
+กล้องทั้งสองตัวอยู่บน mast เดียวกันที่ z = 850 mm — กล้องล่างต้องขึ้นมาจากตัวถัง
+เพราะล้อ Ø250 บังพื้นที่มองตรงลงจนเหลือน้อยเกินไป (ดู design spec §6.3)
 
 ใช้ convention ของ OpenCV:
 
@@ -252,7 +255,7 @@ tests/unit/test_coordinate_frames.py
 [ ] sign convention: lateral_err > 0  →  omega < 0
 [ ] sign convention: omega > 0  →  v_right > v_left  (เลี้ยวซ้าย)
 [ ] mm ↔ m conversion ที่ขอบ urdf และ adapter
-[ ] deg ↔ rad conversion ที่ขอบ urdf (omega_max 40° = 0.698 rad/s)
+[ ] deg ↔ rad conversion ที่ขอบ urdf (omega_max 25° = 0.436 rad/s)
 [ ] pixel → rover-frame → pixel round-trip (camera_down)
 [ ] ไม่มี code ใน controller/ หรือ perception/ ที่อ่าน ground-truth pose จาก Isaac
 ```

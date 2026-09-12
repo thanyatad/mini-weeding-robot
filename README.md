@@ -25,6 +25,9 @@ MVP แรกทำสองอย่างเท่านั้น: **เดิ
 
 Design เต็ม: **[docs/superpowers/specs/2026-09-12-rover-mvp-design.md](docs/superpowers/specs/2026-09-12-rover-mvp-design.md)**
 
+Scale-up เป็นเครื่องภาคสนามขนาดจริง (650 × 520 mm, ล้อ Ø250, ~35 kg — ไม่ใช่
+เครื่องเดโมบนโต๊ะ 145 mm เดิม): **[docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)**
+
 ---
 
 ## Core Principle
@@ -93,13 +96,17 @@ Rover skid-steer 4 ล้อ วิ่งในร่องระหว่าง
 ```text
 Bed                       2000 × 1000 mm
 Crop rows                 3 แถว ตามยาว
-row_spacing               350 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
-clear furrow              290 mm      ◄── ค่าที่ rover ใช้จริง
+row_spacing               750 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
+clear furrow              690 mm      ◄── ค่าที่ rover ใช้จริง
 Soil                      heightfield ผิวไม่เรียบ ±15 mm ไม่ยุบตัว
-Rover                     skid-steer 4WD · กว้างรวมล้อ 146 mm · ล้อ Ø65 mm
-Cameras                   front (nav, ไม่ calibrate) + down (detect, homography)
-Compute                   Raspberry Pi ← serial → ESP32
+Rover                     skid-steer 4WD · เครื่องภาคสนาม ~35 kg · กว้างรวมล้อ 520 mm · ล้อ Ø250 mm
+Cameras                   front (nav, ไม่ calibrate) + down (detect, homography) — ทั้งคู่บน mast เดียวกัน
+Compute                   Raspberry Pi 5 ← serial → ESP32
 ```
+
+**machine class**: นี่คือเครื่องภาคสนามขนาดจริง (650 × 520 mm, ~35 kg) ไม่ใช่
+เครื่องเดโมบนโต๊ะขนาด 200 × 145 mm ของรอบพัฒนาก่อนหน้า — ตัวเลขทุกตัวในเอกสารนี้
+คือของ Rover Base V0 ดู [scale-up design](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)
 
 **`row_spacing` ไม่ใช่ความกว้างที่ rover วิ่งได้** — ใบพืชยื่นเข้ามาข้างละ ~30 mm
 ค่าที่ใช้จริงคือ `clear_furrow = row_spacing − 2 × crop_foliage_half_width`
@@ -144,23 +151,26 @@ MVP **ไม่มี bumper switch** ตัวชดเชยคือ `runaway
 ความปลอดภัยที่พึ่งตัวเลขใน config ต้องถูก validate ตอน startup ไม่ใช่หวังว่าจะตั้งถูก
 
 ```text
-safety      v_max × command_timeout/1000        <= runaway_budget        30 <= 60
-safety      v_max × row_loss_frames/loop_hz     <= runaway_budget        30 <= 60
-geometry    wheel_diameter        >= 4 × soil_variation                  65 >= 60
-geometry    chassis_clearance     >  soil_variation                      35 >  15
-geometry    clear_furrow          >  body_width + 2 × runaway_budget    290 > 266
-drive       v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 340
-drive       v − omega_max_rad × track/2  >= wheel_v_min                58.1 >=  51
+safety      v_max × command_timeout/1000        <= runaway_budget         48 <= 60
+safety      v_max × row_loss_frames/loop_hz     <= runaway_budget         48 <= 60
+geometry    wheel_diameter        >= 4 × soil_variation                  250 >= 60
+geometry    chassis_clearance     >  soil_variation                      125 >  15
+geometry    clear_furrow          >  body_width + 2 × runaway_budget     690 > 640
+drive       v + omega_max_rad × track/2  <= wheel_v_max               253.8 <= 327
+drive       v − omega_max_rad × track/2  >= wheel_v_min                66.2 >=  51
 config      gains[backend] ไม่เป็น null
 consistency simulation.soil.variation_mm == bed.soil_variation_mm
 ```
 
 ทุกข้อ fail = **ไม่ start** + บอกค่าที่ขัดกันเป็นตัวเลข ไม่ใช่ warning
 
-ตัวเลขสี่ชุดในโปรเจกต์นี้ถูกแก้เพราะ invariant จับได้ตอนร่างเอกสาร ไม่ใช่ตอน debug:
-`row_spacing` (250 → 350) · `omega_max` (60 → 40 เพราะ deadband มอเตอร์) ·
-นิยามข้อ 5 (`row_spacing` → `clear_furrow` เพราะใบพืชกินร่อง) ·
-`track_width` (140 → 120 เพราะ `body_width` ต้องหมายถึงความกว้าง**รวมล้อ** ไม่ใช่แค่แชสซี)
+ตัวเลขในโปรเจกต์นี้ถูกแก้หลายรอบเพราะ invariant จับได้ตอนร่างเอกสาร ไม่ใช่ตอน debug —
+รอบ MVP เดิม (เครื่อง 145 mm): `row_spacing` (250 → 350) · `omega_max`
+(60 → 40 เพราะ deadband มอเตอร์) · นิยามข้อ 5 (`row_spacing` → `clear_furrow`
+เพราะใบพืชกินร่อง) · `track_width` (140 → 120 เพราะ `body_width` ต้องหมายถึง
+ความกว้าง**รวมล้อ** ไม่ใช่แค่แชสซี) — รอบ scale-up นี้ (เครื่อง 520 mm):
+`row_spacing` (350 → 750) · `track_width` (120 → 430) · `omega_max`
+(40 → 25 ที่ track ใหม่) ดู [docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md §7](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)
 
 ดู [config/README.md](config/README.md#startup-invariants) · [controller/README.md](controller/README.md#startup-validation)
 
@@ -189,24 +199,32 @@ Full architecture rationale: **[docs/architecture.md](docs/architecture.md)**
 
 ## Asset Pipeline
 
-Geometry ทั้งหมดเกิดที่ CAD แล้วไหลไป simulation — ไม่มีใครวาดของซ้ำสองที่
+Geometry ทั้งหมดเกิดที่ `cad/parameters/parameters.csv` แล้วไหลไป simulation —
+ไม่มีใครวาดของซ้ำสองที่ `rover.f3d` **ไม่ใช่** ต้นทางของ geometry ที่ sim ใช้
+(ดู [cad/README.md#pipeline](cad/README.md#pipeline) สำหรับรายละเอียดเต็ม):
 
 ```text
-Fusion 360  cad/fusion/rover.f3d           ◄── source of truth
+cad/parameters/parameters.csv          ◄── source of truth: geometry
    │
-   ├── parameters ──> cad/parameters/parameters.csv ──┬─> config/rover.yaml
-   │                                                   └─> hardware/mechanical/dimensions.md
+   ├── (sync)  ──> config/rover.yaml · hardware/mechanical/dimensions.md
    │
-   └── exports/meshes ──> cad/urdf/weeding_rover.urdf
-                                 │  Isaac URDF importer
-                                 ▼
-              sim/isaac/robots/rover/rover_base.usd    generated, gitignored
-                                 │  + USD layer
-                                 ▼
-              sim/isaac/robots/rover/rover.usd         physics tuning, commit
+   ├── tools/generate_sim_meshes.py ──> cad/exports/meshes/ · cad/urdf/meshes/
+   │                                     (generated — ห้ามแก้ด้วยมือ)
+   │                                          │
+   │                                          ▼
+   │                                   cad/urdf/weeding_rover.urdf
+   │                                          │  Isaac URDF importer
+   │                                          ▼
+   │                    sim/isaac/robots/rover/rover_base.usd    generated, gitignored
+   │                                          │  + USD layer
+   │                                          ▼
+   │                    sim/isaac/robots/rover/rover.usd         physics tuning, commit
+   │
+   └── Fusion 360 (งานมือ)  cad/fusion/rover.f3d ──> cad/exports/step/ · cad/exports/stl/
+                                                       (สำหรับผลิตเท่านั้น)
 ```
 
-**CAD เป็นเจ้าของ geometry · `config/` เป็นเจ้าของ operational limits**
+**`parameters.csv` เป็นเจ้าของ geometry · `config/` เป็นเจ้าของ operational limits**
 ค่าที่ derived จาก CAD มีตารางกำกับใน [cad/parameters/README.md](cad/parameters/README.md)
 และมี `tests/unit/test_cad_config_sync.py` จับ drift
 

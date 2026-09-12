@@ -7,6 +7,11 @@ Repository นี้ออกแบบให้พัฒนา Mini Smart Weedin
 
 Form factor: **rover skid-steer 4 ล้อ วิ่งในร่องระหว่างแถวปลูก**
 
+(Rover Base V0 — 650 × 520 mm, ~35 kg: ร่องกว้างขึ้นตามตัวรถ `row_spacing_mm`
+จึงเป็น **750 mm** ไม่ใช่ 350 mm ของรอบพัฒนาก่อนหน้า — ดู
+[docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)
+convention ของ frame และ layer ด้านล่างไม่เปลี่ยนเลยตาม form factor นี้)
+
 First MVP ทำสองอย่าง: **เดินตามร่องด้วยกล้อง** และ **ตรวจจับวัชพืชในร่อง** —
 ไม่กำจัดวัชพืช ดู [§12 MVP Scope](#12-mvp-scope)
 

@@ -1,6 +1,8 @@
 # cad
 
-Mechanical source of truth — **geometry ทั้งหมดเกิดที่นี่**
+Mechanical source of truth — **เรขาคณิตทั้งหมดต้นทางที่ `cad/parameters/parameters.csv`**
+งานผลิต (STEP / STL) มาจาก Fusion โดยตรง แต่ **ไม่ใช่ต้นทางของ geometry ที่ sim ใช้**
+ดู [Pipeline](#pipeline) ด้านล่าง
 
 ```text
 cad/
@@ -26,24 +28,39 @@ cad/
 
 ## Pipeline
 
+`cad/parameters/parameters.csv` **คือต้นทางของ geometry** — ไม่ใช่ `rover.f3d`
+สอง path ไหลออกจากมันแยกกัน และไม่มี path ไหนขึ้นกับอีก path (S11):
+
 ```text
-Fusion 360  cad/fusion/rover.f3d           ◄── source of truth: geometry
+cad/parameters/parameters.csv          ◄── source of truth: geometry
    │
-   ├── parameters ──> cad/parameters/parameters.csv
+   ├── tools/generate_sim_meshes.py ──> cad/exports/meshes/ · cad/urdf/meshes/
+   │                                     (generated — ห้ามแก้ด้วยมือ)
+   │                                          │
+   │                                          ▼
+   │                                   cad/urdf/weeding_rover.urdf
+   │                                          │
+   │                                          │  Isaac URDF importer  →  scripts/import_urdf.sh
+   │                                          ▼
+   │                    sim/isaac/robots/rover/rover_base.usd    ◄── generated, gitignored
+   │                                          │
+   │                                          │  + USD layer
+   │                                          ▼
+   │                    sim/isaac/robots/rover/rover.usd         ◄── override layer, commit
    │
-   └── exports ──> step/ · stl/ · meshes/
-                      │
-                      ▼
-              cad/urdf/weeding_rover.urdf
-                      │
-                      │  Isaac URDF importer  →  scripts/import_urdf.sh
-                      ▼
-       sim/isaac/robots/rover/rover_base.usd    ◄── generated, gitignored
-                      │
-                      │  + USD layer
-                      ▼
-       sim/isaac/robots/rover/rover.usd         ◄── override layer, commit
+   └── Fusion 360 (งานมือ)  cad/fusion/rover.f3d ──> cad/exports/step/ · cad/exports/stl/
+                                                       (สำหรับผลิต / review / ส่งร้าน เท่านั้น)
 ```
+
+`tools/generate_sim_meshes.py` อ่าน `parameters.csv` แล้วเขียน mesh + inertia
+tensor ให้ sim โดยตรง — ไม่ผ่าน Fusion เลย เพราะ Fusion เป็นงานมือ ถ้า sim
+ต้องรอ assembly งาน development จะหยุด `cad/exports/meshes/` และ
+`cad/urdf/meshes/` จึงเป็นไฟล์ **generated** ห้ามแก้ด้วยมือ — แก้ที่
+`parameters.csv` แล้วรัน generator ใหม่เสมอ
+
+`rover.f3d` ยังเป็น**พารามิเตอร์ assembly ของจริง** และเป็นเจ้าของ
+`cad/exports/step/` กับ `cad/exports/stl/` สำหรับงานผลิต แต่**ไม่ใช่ต้นทางของ
+geometry ที่ sim ใช้** — ตามมาทีหลังได้โดยไม่บล็อกใคร (design §9.1)
 
 ### ทำไมต้องแยก 2 USD layer
 
@@ -71,8 +88,10 @@ Friction ของล้อกับ heightfield เป็นค่าที่ 
 
 1. แก้ parameter ใน Fusion (ไม่ใช่แก้ sketch ตรง ๆ)
 2. Export `parameters.csv` ทับของเดิม แล้ว commit
-3. Export mesh / STEP ที่เกี่ยวข้อง
-4. Regenerate URDF → base USD
+3. รัน `tools/generate_sim_meshes.py` เพื่อ regenerate `cad/exports/meshes/`
+   และ `cad/urdf/meshes/` — **ไม่ใช่ export mesh มือจาก Fusion**
+   ส่วน STEP/STL งานผลิตยัง export จาก Fusion ตามปกติเมื่อจำเป็น
+4. Regenerate URDF → base USD (Isaac importer)
 
 แล้วรัน:
 
@@ -101,6 +120,7 @@ rover มี coupling ระหว่าง CAD กับ software ที่ gan
 | `body_width_mm` | **invariant ข้อ 5** (`clear_furrow > body_width + 2 × runaway_budget`) |
 | `chassis_clearance_mm` | **invariant ข้อ 4** (`> soil_variation`) |
 | `camera_down_height_mm` | coverage ของ corridor — ถ้าต่ำเกินจะเห็นไม่ครบร่อง |
+| `chassis_plate_width_mm` | ถ้าเกิน track − wheel_width โครงชนล้อ — `test_the_chassis_plate_clears_the_inner_faces_of_the_wheels` |
 
 `camera_front_tilt_deg` เป็นตัวที่เจ็บที่สุด เพราะ **ไม่มี test จับได้** —
 `test_cad_config_sync.py` ตรวจว่าตัวเลขตรงกัน แต่ตรวจไม่ได้ว่า gain ยังเหมาะกับมุมใหม่
@@ -143,8 +163,8 @@ git add .gitattributes
 
 ```text
 wheel_v_max_mm_s = (motor_rpm / 60) × pi × wheel_diameter_mm
-                 = (100 / 60) × pi × 65
-                 = 340 mm/s
+                 = (25 / 60) × pi × 250
+                 = 327 mm/s
 ```
 
 `wheel_diameter_mm` เป็น CAD · `motor_rpm` เป็นสเปกของของที่ซื้อ (BOM)
