@@ -1,0 +1,14 @@
+# safety.yaml — runaway budget, timeout, row-loss frames, E-stop
+#
+# `runaway_budget_mm` คือระยะที่ยอมให้ rover วิ่งต่อหลังเสียการควบคุม
+# MVP ไม่มี bumper switch ค่านี้จึงเป็นตัวชดเชยหลัก — ต้องวัดจากแปลงจริงที่ V4
+#
+# `link_lost_ms (500) > command_timeout_ms (300)` โดยเจตนา — ESP32 ต้องดับมอเตอร์
+# ก่อนที่ Pi จะประกาศ error ถ้ากลับกัน Pi จะเข้า ERROR ขณะที่ล้อยังหมุนอยู่ 200 ms
+
+safety:
+  runaway_budget_mm: 60
+  row_loss_frames: 3
+  command_timeout_ms: 300
+  link_lost_ms: 500
+  enable_estop: true

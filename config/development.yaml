@@ -1,0 +1,11 @@
+# development.yaml — เลือก backend และตั้งค่า logging
+#
+#   fake    unit test + closed-loop row following (ไม่ต้องเปิด Isaac)
+#   isaac   simulation
+#   esp32   hardware — ต้อง tune row_follower.gains.esp32 ก่อน ไม่งั้น startup fail
+
+backend: isaac
+
+logging:
+  level: INFO
+  weed_log_path: logs/weeds.jsonl

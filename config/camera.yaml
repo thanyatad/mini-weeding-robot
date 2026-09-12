@@ -1,0 +1,22 @@
+# camera.yaml — front (ไม่ calibrate) + down (intrinsic, homography, error budget)
+#
+# กล้องหน้าไม่ calibrate โดยเจตนา — `RowEstimate` เป็นค่า image-space ล้วน
+# (`lateral_err`, `heading_err` เป็น ratio ใน [-1, 1]) และ `heading_err` คำนวณจาก
+# ผลต่างของ valley สองระยะในภาพเดียวกัน ซึ่งไม่ต้องรู้ geometry กล้องเลย
+#
+# `error_budget_mm: 20` ผ่อนจาก 8 ของ design gantry เพราะ MVP ไม่มีอะไรกระทำ
+# ต่อตำแหน่ง — ไม่มี tool ที่ต้องเล็ง แต่ยังต้องทำ homography ตอนนี้ ไม่เลื่อน
+# เพื่อรู้ตัวเลข error budget จริงบนดิน ±15 mm ก่อนออกแบบ tool ที่ M3
+
+cameras:
+
+  front:
+    calibrated: false          # โดยเจตนา — row following ใช้แค่มุม/offset ในภาพ
+    device: /dev/video0
+
+  down:
+    device: /dev/video1
+    intrinsic: { fx: null, fy: null, cx: null, cy: null }
+    distortion: null
+    homography: null           # เติมจาก tools/calibration/
+    error_budget_mm: 20        # target — ต้องวัดจริงแล้วบันทึกค่าที่วัดได้

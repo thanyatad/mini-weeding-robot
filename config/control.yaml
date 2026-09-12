@@ -1,0 +1,23 @@
+# control.yaml — gain ของ row follower แยกตาม backend
+#
+# `null` ไม่ใช่ค่าว่างที่ถูกลืม — เป็น guard: ถ้า `backend: esp32` แล้ว gain เป็น null
+# ให้ fail ตอน startup ด้วย config_invalid (invariant ข้อ 8)
+#
+# slip ของ skid-steer บนดินจริงไม่เท่ากับใน sim การปล่อยให้ค่า sim ถูกใช้เป็น
+# default บนของจริงคือ rover ที่แกว่งเข้าหาต้นพืชโดยไม่มีใครรู้ว่าทำไม
+#
+# ⚠️ gain ผูกกับ `camera_front_tilt_deg` และ `camera_front_height_mm` ใน CAD —
+# มุมก้มและความสูงกำหนด lookahead distance ถ้าขยับขายึดกล้อง gain ที่ tune ไว้
+# ใช้ไม่ได้ ต้อง tune ใหม่ ไม่มี test จับข้อนี้ได้
+#
+# หน่วยของ gain คือ `(deg/s) / unitless` — `RowEstimate` ไม่มีหน่วย mm หรือ deg
+# เพราะกล้องหน้าไม่ calibrate จึงไม่มีสูตรคำนวณ gain จากเรขาคณิต ต้อง tune เท่านั้น
+
+row_follower:
+  v_mm_s: 100
+  omega_max_deg_s: 40
+
+  gains:
+    fake:  {k_lat: 45.0, k_head: 25.0}
+    isaac: {k_lat: 45.0, k_head: 25.0}
+    esp32: {k_lat: null, k_head: null}    # ยังไม่ tune บนของจริง

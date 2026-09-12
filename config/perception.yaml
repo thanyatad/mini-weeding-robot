@@ -1,0 +1,24 @@
+# perception.yaml — ExG floor, confidence, loop rate, corridor, weed area
+#
+# `exg_floor` เป็นค่าเดียวใน pipeline ที่ต้อง tune ด้วยมือ — Otsu ต่อเฟรมจัดการ
+# สีดินที่เปลี่ยนตามความชื้นเอง แต่เมื่อไม่มีสีเขียวในเฟรมเลย Otsu จะแบ่ง noise
+# ออกเป็นสองกองแล้วคืน mask ที่ดูเหมือนมีพืช `exg_floor` เป็นพื้นกันข้อนี้
+#
+# `max_lateral_error_mm` กำหนดความกว้าง corridor:
+#   corridor = clear_furrow − 2 × max_lateral_error_mm = 290 − 80 = 210 mm
+
+perception:
+  loop_hz: 10                  # front camera / control loop
+  camera_timeout_ms: 300
+
+  exg:
+    exg_floor: 12              # ต้อง tune ด้วยมือ — ดู config/README.md#exg_floor
+
+  row_estimator:
+    conf_min: 0.25             # valley prominence ขั้นต่ำ
+    front_downscale: [320, 240]
+
+  weed_detector:
+    max_lateral_error_mm: 40   # สมมติฐาน — ต้องวัดที่ V1
+    min_weed_area_mm2: 60
+    down_rate_hz: 2

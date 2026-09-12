@@ -1,0 +1,36 @@
+# simulation.yaml — physics/render rate, camera, soil, bed generator, randomization
+#
+# `soil.variation_mm` ต้องตรงกับ `bed.soil_variation_mm` ใน rover.yaml —
+# ถ้าไม่ตรง simulation จะสร้างดินที่ขัดกับ geometry invariant โดยที่ invariant check ผ่าน
+# ข้อนี้เป็น invariant ข้อที่ 9 ที่บังคับตอน startup ไม่ใช่แค่คำแนะนำ
+#
+# `row_curvature_mm` และ `crop_gap_probability` ต้องไม่เป็น 0 ในการทดสอบปกติ:
+#   row_curvature_mm: 0      → ร่องตรงเป๊ะ RowFollower ผ่านได้ด้วย gain = 0
+#   crop_gap_probability: 0  → heuristic แยก row_end/row_lost ไม่ถูกทดสอบที่จุดที่มันพังจริง
+
+simulation:
+
+  physics_hz: 60
+  render_hz: 30
+
+  camera:
+    front: { width: 640, height: 480 }
+    down:  { width: 1280, height: 720 }
+
+  soil:
+    variation_mm: 15
+    resolution_mm: 10
+
+  environment:
+    bed_length_mm: 2000
+    crop_rows: 3
+    crop_spacing_mm: 80
+    row_spacing_mm: 350
+    weed_count: 20
+
+  randomization:
+    enabled: true
+    row_jitter_mm: 15
+    row_angle_deg: 3
+    row_curvature_mm: 40
+    crop_gap_probability: 0.08
