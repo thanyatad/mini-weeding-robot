@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/thanyatad/mini-weeding-robot/blob/main/protocol/schema.json",
+  "title": "mini-weeding-robot wire protocol",
+  "description": "One JSON message per line, both directions, over serial. The machine-checkable form of protocol/messages.md; that file is the authority on why, this one on shape. Every message object is closed (additionalProperties: false) so that a field nobody defined cannot ride along unnoticed.",
+  "oneOf": [
+    {"$ref": "#/$defs/drive"},
+    {"$ref": "#/$defs/stop"},
+    {"$ref": "#/$defs/emergency_stop"},
+    {"$ref": "#/$defs/reset"},
+    {"$ref": "#/$defs/ack"},
+    {"$ref": "#/$defs/rover_state"},
+    {"$ref": "#/$defs/error"}
+  ],
+  "$defs": {
+    "seq": {
+      "description": "Monotonic per session. Correlates a streaming command with the last_seq the board echoes back, which is what link_age_ms is measured from.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "id": {
+      "description": "Monotonic per session. Correlates a discrete command with its ack.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "drive": {
+      "description": "Streaming command, 10 Hz, no ack, latest-wins. Carries seq and never id: Rule 4 (unacked -> ERROR) is scoped to discrete commands, and a drive in the pending table would turn one dropped frame into an error.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "v_mm_s", "omega_deg_s"],
+      "properties": {
+        "type": {"const": "drive"},
+        "seq": {"$ref": "#/$defs/seq"},
+        "v_mm_s": {"description": "Body velocity, mm/s. Positive is forwards.", "type": "number"},
+        "omega_deg_s": {"description": "Yaw rate, deg/s. Positive turns left (CCW, z up).", "type": "number"}
+      }
+    },
+    "stop": {
+      "description": "Discrete. Controlled stop with the brake held; drive may follow without a reset. Different from drive(0, 0), which coasts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "stop"},
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "emergency_stop": {
+      "description": "Discrete, highest priority. Cuts motor enable and latches; overrides every command outstanding in the same round.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "emergency_stop"},
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "reset": {
+      "description": "Discrete. Clears the emergency_stop and command_timeout latches. Refused with error code emergency_stop while the physical sense line is still active.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "reset"},
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "ack": {
+      "description": "Rover -> Controller. Discrete commands only; a drive is never acked.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "ack"},
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "rover_state": {
+      "description": "Telemetry at 20 Hz, tied to no command id. commanded is nested rather than flattened on purpose: there is no encoder, so a top-level v_mm_s would read like feedback. There is deliberately no measured field; adding one is M2, and additive.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "commanded", "last_seq", "estop", "motors_enabled", "uptime_ms"],
+      "properties": {
+        "type": {"const": "rover_state"},
+        "commanded": {
+          "description": "An echo of the command in force, not a measurement.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["v_mm_s", "omega_deg_s"],
+          "properties": {
+            "v_mm_s": {"type": "number"},
+            "omega_deg_s": {"type": "number"}
+          }
+        },
+        "last_seq": {"$ref": "#/$defs/seq"},
+        "estop": {
+          "description": "The sense line as read from the wire, not a software variable.",
+          "type": "boolean"
+        },
+        "motors_enabled": {
+          "description": "false on command timeout, on estop, and before a reset.",
+          "type": "boolean"
+        },
+        "uptime_ms": {
+          "description": "The board's own clock. A value that goes backwards means the MCU rebooted; it is not for measuring latency, which is what seq and last_seq are for.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "error": {
+      "description": "Either direction. id is present only when the error answers a discrete command.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "code", "message"],
+      "properties": {
+        "type": {"const": "error"},
+        "code": {"$ref": "#/$defs/error_code"},
+        "message": {
+          "description": "Human-readable, and expected to carry the numbers that identify the fault.",
+          "type": "string"
+        },
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "error_code": {
+      "description": "The seven codes of spec §8.5. Closed: a code nobody handles arrives at the controller as an unknown string.",
+      "type": "string",
+      "enum": [
+        "row_lost",
+        "link_lost",
+        "camera_timeout",
+        "command_timeout",
+        "config_invalid",
+        "communication_lost",
+        "emergency_stop"
+      ]
+    }
+  }
+}

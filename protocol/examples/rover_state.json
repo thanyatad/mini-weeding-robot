@@ -1,0 +1,1 @@
+{"type": "rover_state", "commanded": {"v_mm_s": 100.0, "omega_deg_s": -12.5}, "last_seq": 1234, "estop": false, "motors_enabled": true, "uptime_ms": 48210}
