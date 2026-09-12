@@ -1,33 +1,44 @@
 # cad
 
-> ### ⚠️ ยังไม่มี geometry สำหรับงานผลิต
+> ### ⚠️ `cad/fusion/rover_base_v0.f3d` เป็น snapshot ไม่ใช่ working file
 >
-> `parameters.csv` · `urdf/` · `exports/meshes/` เป็น Rover Base V0
-> (650 × 520, ล้อ Ø250) ครบแล้ว — sim ใช้งานได้เต็มที่
->
-> แต่ **`exports/step/` และ `exports/stl/` ว่างเปล่า** Fusion assembly ของรถคันเก่า
-> (ล้อ Ø70) ถูกลบทิ้งแล้วเพราะอธิบายเครื่องคนละขนาด และยังไม่มีใครสร้างของใหม่
+> Rover Base V0 (650 × 520, ล้อ Ø250) มี assembly แล้ว `exports/step/` และ
+> `exports/stl/` ไม่ว่างอีกต่อไป
 >
 > ```text
-> parameters.csv · urdf/ · exports/meshes/   ✓ V0 650 × 520 (generated)
-> exports/step/ · exports/stl/               ✗ ยังไม่มี — ต้องสร้าง assembly ใหม่
+> parameters.csv · urdf/ · exports/meshes/   ✓ generated จาก CSV
+> fusion/ · exports/step/ · exports/stl/     ✓ มาจาก CAD assembly
 > ```
 >
-> ใครสร้าง assembly ใหม่ **ให้ขึ้นรูปจาก `parameters.csv`** ไม่ใช่จากไฟล์เก่า
-> และเมื่อสร้างแล้ว assembly นั้นเป็นเจ้าของ `step/`/`stl/` เท่านั้น —
-> `parameters.csv` ยังเป็นต้นทางของ geometry ต่อไป
+> แต่ **ตัวที่แก้ได้อยู่บน Autodesk cloud ไม่ใช่ไฟล์ใน repo** — Fusion save ลง
+> cloud project เสมอ ไม่เคย save กลับมาที่นี่:
+>
+> ```text
+> เปิด .f3d  →  Fusion upload เข้า cloud  →  ได้ document ใหม่ คนละตัวกับไฟล์นี้
+> กด Save    →  ลง cloud                  →  ไฟล์ใน repo ไม่ขยับ
+> ```
+>
+> **แก้ assembly แล้วต้อง export ทับทั้ง 3 ที่เสมอ** (`fusion/` · `exports/step/` ·
+> `exports/stl/`) ไม่งั้นมัน stale เงียบ ๆ — `7e91e59` ลบ `rover.f3d` ตัวเก่าทิ้ง
+> เพราะค้างอยู่ที่รถ 200 × 145 ล้อ Ø70 ทั้งที่โปรเจกต์ย้ายไป 650 × 520 แล้ว
+>
+> `parameters.csv` ยังเป็นต้นทางของ geometry เหมือนเดิม — `.f3d` เก็บไว้กู้ **งาน
+> ประกอบ** (user parameter, sketch, constraint) ไม่ใช่กู้ตัวเลขขนาด
 >
 > `exports/meshes/` **ไม่เกี่ยวกับงานนี้เลย** — `tools/generate_sim_meshes.py`
 > สร้างจาก `parameters.csv` ให้แล้ว
 
 Mechanical source of truth — **เรขาคณิตทั้งหมดต้นทางที่ `cad/parameters/parameters.csv`**
-งานผลิต (STEP / STL) ต้องมี CAD assembly ซึ่งตอนนี้**ยังไม่มี** ดู [Pipeline](#pipeline) ด้านล่าง
+งานผลิต (STEP / STL) มาจาก CAD assembly ใน `fusion/` ดู [Pipeline](#pipeline) ด้านล่าง
 
 ```text
 cad/
 ├── parameters/
 │   ├── README.md               นิยาม parameter + ตาราง derived
 │   └── parameters.csv          ต้นทางของ geometry — แก้ตรงนี้ (commit ทุกครั้งที่แก้ขนาด)
+│
+├── fusion/
+│   └── rover_base_v0.f3d       snapshot ของ assembly — ตัวจริงบน cloud (ดูกล่องบนสุด)
 │
 ├── exports/
 │   ├── step/                   งานผลิต / review / ส่งร้าน
@@ -63,7 +74,8 @@ cad/parameters/parameters.csv          ◄── source of truth: geometry
    │                                          ▼
    │                    sim/isaac/robots/rover/rover.usd         ◄── override layer, commit
    │
-   └── CAD assembly (งานมือ — ยังไม่มี) ──> cad/exports/step/ · cad/exports/stl/
+   └── CAD assembly (งานมือ, บน cloud) ─> cad/fusion/rover_base_v0.f3d
+                                          cad/exports/step/ · cad/exports/stl/
                                              (สำหรับผลิต / review / ส่งร้าน เท่านั้น)
 ```
 
@@ -73,9 +85,9 @@ tensor ให้ sim โดยตรง — ไม่ผ่าน CAD assembly �
 `cad/urdf/meshes/` จึงเป็นไฟล์ **generated** ห้ามแก้ด้วยมือ — แก้ที่
 `parameters.csv` แล้วรัน generator ใหม่เสมอ
 
-**path ล่างยังว่าง** ไม่มี assembly ในโปรเจกต์แล้ว งานผลิตจึงยังทำไม่ได้จนกว่า
-จะมีคนสร้างขึ้นมาใหม่จาก `parameters.csv` — ซึ่งตามมาทีหลังได้โดยไม่บล็อกใคร
-(design §9.1) นี่คือเหตุผลที่ sim ไม่ถูกผูกกับมันตั้งแต่แรก
+**path ล่างมีของแล้ว** assembly ขึ้นรูปจาก `parameters.csv` และผูก user parameter
+ไว้ทุกตัว แต่มันยังตามมาทีหลังได้โดยไม่บล็อกใคร (design §9.1) — นี่คือเหตุผลที่ sim
+ไม่ถูกผูกกับมันตั้งแต่แรก และยังไม่ควรผูก
 
 ### ทำไมต้องแยก 2 USD layer
 
@@ -127,16 +139,17 @@ pytest tests/unit/test_urdf_matches_cad.py      # จับ URDF ที่ยั
 ### งานผลิต — แยกต่างหาก ไม่บล็อกงาน sim
 
 STEP/STL งานผลิตเป็นคนละ track จาก 3 ขั้นข้างบน และตามทีหลังได้เสมอโดยไม่บล็อกใคร
-(design §9.1) — sim ไม่ต้องรอ assembly ที่ยังไม่มี
+(design §9.1) — sim ไม่ต้องรอ assembly
 
-**ตอนนี้ track นี้ยังว่าง** ไม่มี CAD assembly ในโปรเจกต์ ขั้นตอนเมื่อมีคนสร้าง:
+ขั้นตอนเมื่อแก้ assembly (เปิดตัวบน cloud ไม่ใช่ `.f3d` ใน repo):
 
-1. สร้าง assembly ใหม่โดย**ขึ้นรูปจากตัวเลขใน `parameters.csv`** และผูกเป็น
-   user parameter ไว้ (อย่า hard-code ลง sketch) เพื่อให้รอบหน้าแก้ที่เดียว
-2. Export `cad/exports/step/` ชิ้นที่กระทบ
-3. Export `cad/exports/stl/` เฉพาะชิ้นที่ต้องพิมพ์ใหม่
+1. แก้ผ่าน **user parameter** เท่านั้น — อย่าพิมพ์ตัวเลขลง sketch และอย่าใช้
+   Move/Copy กับ body ทั้งสองอย่างตัดชิ้นนั้นขาดจาก `parameters.csv`
+2. Export `cad/fusion/rover_base_v0.f3d` ทับ — **ขั้นนี้ลืมบ่อยที่สุด**
+3. Export `cad/exports/step/` ชิ้นที่กระทบ
+4. Export `cad/exports/stl/` เฉพาะชิ้นที่ต้องพิมพ์ใหม่
 
-assembly ที่สร้างใหม่เป็นเจ้าของ `step/`/`stl/` เท่านั้น — ไม่ใช่ต้นทางของ
+assembly เป็นเจ้าของ `fusion/`/`step/`/`stl/` เท่านั้น — ไม่ใช่ต้นทางของ
 geometry และไม่มีอะไรใน sim ขึ้นกับมัน
 
 ---

@@ -5,11 +5,11 @@
 | | ต้นฉบับ | แก้ยังไง |
 |---|---|---|
 | `meshes/` | `cad/parameters/parameters.csv` | รัน `python tools/generate_sim_meshes.py` — **ห้ามแก้ไฟล์ด้วยมือ** |
-| `step/` · `stl/` | CAD assembly (**ยังไม่มี**) | สร้าง assembly จาก `parameters.csv` แล้ว export |
+| `step/` · `stl/` | CAD assembly (`../fusion/` — ตัวจริงบน cloud) | แก้ assembly แล้ว export ทับ |
 
 `meshes/` เป็น simplified visual + collision สำหรับ simulator เท่านั้น
-`step/` และ `stl/` เป็น geometry สำหรับผลิต — **ยังว่างเปล่า** assembly ของรถคันเก่า
-ถูกลบไปแล้ว และยังไม่มีใครสร้างของใหม่ ดู [../README.md](../README.md)
+`step/` และ `stl/` เป็น geometry สำหรับผลิต มาจาก CAD assembly — **ไม่ auto-update**
+ต้อง export ทับเองทุกครั้งที่แก้ assembly ดู [../README.md](../README.md)
 
 ---
 
@@ -62,11 +62,12 @@ point จำนวนมาก ทำให้ solver ช้าลงมาก�
 [ ] pytest tests/unit/test_urdf_matches_cad.py
 ```
 
-งานผลิต — แยกต่างหาก ตามทีหลังได้โดยไม่บล็อกใคร **ยังทำไม่ได้จนกว่าจะมี assembly**
+งานผลิต — แยกต่างหาก ตามทีหลังได้โดยไม่บล็อกใคร
 (เมื่อต้อง export `step/`/`stl/` ใหม่สำหรับผลิต):
 
 ```text
-[ ] สร้าง/เปิด CAD assembly ที่ผูก user parameter ไว้กับ parameters.csv
+[ ] เปิด assembly บน cloud (ไม่ใช่ .f3d ใน repo) แก้ผ่าน user parameter เท่านั้น
+[ ] fusion/  export .f3d ทับ — ลืมบ่อยที่สุด
 [ ] step/    export ชิ้นที่กระทบ
 [ ] stl/     export เฉพาะชิ้นที่ต้องพิมพ์ใหม่
 ```
