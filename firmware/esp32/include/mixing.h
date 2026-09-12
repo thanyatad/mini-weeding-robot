@@ -19,8 +19,8 @@
  * below and asserts they still equal the config.  The day track width changes,
  * that test fails instead of the firmware quietly mixing for the old chassis.
  */
-#define TRACK_WIDTH_MM 120.0f   /* config/rover.yaml rover.track_width_mm */
-#define WHEEL_V_MAX_MM_S 202.0f /* config/rover.yaml rover.drive.wheel_v_max_mm_s */
+#define TRACK_WIDTH_MM 430.0f   /* config/rover.yaml rover.track_width_mm */
+#define WHEEL_V_MAX_MM_S 327.0f /* config/rover.yaml rover.drive.wheel_v_max_mm_s */
 
 /* Commanded surface speed of each side, mm/s.  Not measured — no encoders. */
 typedef struct {

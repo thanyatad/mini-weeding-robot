@@ -20,8 +20,8 @@ REPO = Path(__file__).resolve().parents[2]
 # The header block of the CSV states the parameters the table was generated
 # against.  They are repeated here so a change to either one fails loudly
 # instead of silently invalidating every row.
-TRACK_WIDTH_MM = 120.0
-WHEEL_V_MAX_MM_S = 202.0
+TRACK_WIDTH_MM = 430.0
+WHEEL_V_MAX_MM_S = 327.0
 TOLERANCE_MM_S = 0.01
 
 VECTORS_CSV = CONFIG_DIR / "drive_mixing_vectors.csv"
