@@ -83,6 +83,35 @@ contract ไม่ใช่ต่างกันที่ index:
 
 `capture(id)` จะซ่อนความต่างนี้ แล้วมีคนเผลอเอาภาพ `front` ไปทำ coordinate transform
 
+### `Frame` — ภาพที่รู้อายุตัวเอง
+
+```python
+@dataclass(frozen=True, eq=False)
+class Frame:
+    image: np.ndarray       # (h, w, 3) RGB
+    timestamp_s: float      # monotonic clock ไม่ใช่ epoch
+```
+
+`camera_timeout_ms: 300` แปลว่าต้องมีใครสักคนตอบได้ว่าเฟรมนี้เก่าไปหรือยัง
+stack ที่มี sensor จริงอยู่ข้างหลังตอบจาก**ตัวเฟรมเอง**ทั้งนั้น — ROS 2 ปั๊ม
+acquisition time ลง header ของ `sensor_msgs/Image` · librealsense แขวน
+`get_timestamp()` ไว้กับ frame object ข้อยกเว้นคือ `VideoCapture` ของ OpenCV
+ที่คืน array เปล่าแล้วให้ไปถามเวลาแยกทาง `CAP_PROP_POS_MSEC` ซึ่งมีเอกสารว่า
+คืน `-1` บนกล้องสด — **type alias เป็น ndarray เฉย ๆ คือ design นั้น**
+
+นาฬิกาเป็น monotonic ไม่ใช่ wall clock เพราะคำถามเดียวที่ถาม timestamp คือ
+ระยะเวลา ("เกิน 300 ms หรือยัง") และ wall clock เดินถอยหลังได้ตอน NTP แก้เวลา
+ซึ่งจะทำให้ check ยิงใส่เฟรมสด หรือปล่อยเฟรมเก่าผ่าน
+
+**`row_estimator.estimate()` รับ `np.ndarray` ไม่ใช่ `Frame`** — ROS แยกแบบเดียวกัน
+คือ message พก header ส่วน `cv_bridge` ส่ง array เปล่าให้ algorithm estimator
+ต้องการ pixel และไม่มีเรื่องต้องใช้นาฬิกา การใส่ field ที่มันห้ามอ่านลงใน
+signature คือการชวนให้มีคนอ่าน
+
+**คนเช็ค timeout ไม่ใช่ perception** `Event.CAMERA_TIMEOUT` อยู่ใน
+`row_run.FAULT_EVENTS` ซึ่งเป็นชุดที่ detect *นอก* control loop — หน้าที่ของชั้นนี้
+คือทำให้อายุเฟรม*รู้ได้* ไม่ใช่ตัดสินมัน
+
 ---
 
 ## `exg.py` — ExG + adaptive threshold + absolute floor

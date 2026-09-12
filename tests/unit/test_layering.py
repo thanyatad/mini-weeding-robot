@@ -13,7 +13,18 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 
 #: Everything that runs on the real rover.  None of it may know about a pose.
-POSE_FREE_DIRS = ("controller/workflow", "controller/motion", "controller/safety")
+#:
+#: ``perception`` is here for the same reason as the control path: the real
+#: rover has no localisation (hardware/mechanical/coordinate-frames.md), so an
+#: estimator that reached for one would work in Isaac and have nothing to read
+#: in the field.  The front camera is uncalibrated on purpose, which leaves the
+#: estimator no way to produce a position even if it wanted to.
+POSE_FREE_DIRS = (
+    "controller/workflow",
+    "controller/motion",
+    "controller/safety",
+    "perception",
+)
 
 
 def _python_sources(*relative_dirs: str) -> list[Path]:
