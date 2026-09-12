@@ -24,7 +24,7 @@ from controller.config import get, load_config
 REPO = Path(__file__).resolve().parents[2]
 PARAMETERS_CSV = REPO / "cad" / "parameters" / "parameters.csv"
 CONFIG_DIR = REPO / "config"
-BOM_MD = REPO / "hardware" / "bom" / "poc-v2.md"
+BOM_MD = REPO / "hardware" / "bom" / "poc-v3.md"
 
 #: Every parameter cad/parameters/README.md#parameters lists.  Named here so a
 #: parameter quietly dropped from the export is a failure and not a silently
@@ -161,12 +161,12 @@ def test_the_bom_still_states_the_motor_speed():
     """wheel_v_max is derived from a number that lives in the BOM, not in CAD.
     If the BOM row is reworded, the derivation below is quietly testing nothing.
     """
-    assert _motor_rpm() == 55.0
+    assert _motor_rpm() == 25.0
 
 
 def _motor_rpm() -> float:
     found = re.search(
-        r"DC gear motor 12 V\s*\*\*~(\d+) RPM\*\*", BOM_MD.read_text(encoding="utf-8")
+        r"DC gear motor 24 V\s*\*\*~(\d+) RPM\*\*", BOM_MD.read_text(encoding="utf-8")
     )
     assert found is not None, f"could not find the motor speed in {BOM_MD}"
     return float(found.group(1))
