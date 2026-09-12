@@ -5,7 +5,7 @@
 ```text
 hardware/
 ├── bom/
-│   └── poc-v2.md               รายการของ + ข้อกำหนดที่ต้องตรวจก่อนซื้อ
+│   └── poc-v3.md               requirement envelope + ข้อกำหนดที่ต้องตรวจก่อนซื้อ
 │
 ├── mechanical/
 │   ├── dimensions.md           ขนาดทั้งหมด (derived จาก CAD)
@@ -23,7 +23,7 @@ hardware/
 
 | ถ้าคุณกำลัง… | อ่าน |
 |---|---|
-| ประเมินงบ / จะซื้อของ | [bom/poc-v2.md](bom/poc-v2.md) |
+| ประเมินงบ / จะซื้อของ | [bom/poc-v3.md](bom/poc-v3.md) |
 | ประกอบ rover | [mechanical/assembly.md](mechanical/assembly.md) |
 | เดินสาย | [electrical/wiring.md](electrical/wiring.md) → [electrical/power.md](electrical/power.md) |
 | เขียน firmware | [electrical/wiring.md](electrical/wiring.md) + [../docs/hardware.md](../docs/hardware.md) |
@@ -54,7 +54,7 @@ cad/parameters/parameters.csv   ◄── ต้นทาง
    ├─► cad/urdf/weeding_rover.urdf         (simulation)
    └─► config/drive_mixing_vectors.csv     (firmware + sim)
 
-cad/fusion/rover.f3d ──► cad/exports/step/ · cad/exports/stl/   (งานผลิตเท่านั้น)
+CAD assembly (ยังไม่มี) ──► cad/exports/step/ · cad/exports/stl/   (งานผลิตเท่านั้น)
 ```
 
 ถ้าตัวเลขที่นี่ขัดกับ `parameters.csv` → **CSV ถูก** แล้วเอกสารนี้ล้าสมัย
@@ -125,4 +125,4 @@ pytest tests/unit/test_cad_config_sync.py
 
 ถ้าขอบแปลงไม่ยก หรือ `runaway_budget` ยังไม่ได้วัดจริง — ต้องมีคนยืนถือ E-stop
 
-ดู [../docs/superpowers/specs/2026-09-12-rover-mvp-design.md](../docs/superpowers/specs/2026-09-12-rover-mvp-design.md#13-known-limitations)
+ดู [../docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](../docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md#12-risks--สิ่งที่ไม่มี-test-จับได้)

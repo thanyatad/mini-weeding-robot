@@ -2,12 +2,13 @@
 
 cad/README.md splits the exports: `exports/meshes/` is simplified visual and
 collision geometry for the simulator, `exports/step|stl` is for manufacturing.
-Only the first is generated here.  Fusion still owns everything a shop would
-cut, and that work can follow later without blocking Isaac.
+Only the first is generated here.  Everything a shop would cut needs a CAD
+assembly, which this project does not currently have, and that work can follow
+later without blocking Isaac.
 
-This reads a CSV.  It is NOT Fusion-API tooling, which cad/parameters/README.md
+This reads a CSV.  It is NOT CAD-API tooling, which cad/parameters/README.md
 warns against on maintenance-cost grounds -- there is nothing here that breaks
-when Autodesk ships a new version.
+when a CAD vendor ships a new version.
 
 The mass model is an ESTIMATE (hardware/bom/poc-v3.md, +/-20%).  When real
 parts are weighed, MASS_ITEMS below is the single place to change.
@@ -309,7 +310,7 @@ def write_stl(path: Path, name: str, mesh: Mesh) -> None:
 
     ASCII rather than binary on purpose: this geometry is a handful of boxes and
     two cylinders, so the file is small, and a text file is one a reviewer can
-    open.  The Fusion exports under exports/stl/ are a different matter and stay
+    open.  Manufacturing exports under exports/stl/ are a different matter and stay
     binary and LFS-tracked.
     """
     lines = [f"solid {name}"]
@@ -343,7 +344,7 @@ def main(
     if stl_dirs is None:
         # Only exports/meshes gets STL: the URDF references .obj, so urdf/meshes
         # carries nothing it does not use.  exports/stl/ is manufacturing
-        # geometry and belongs to Fusion, not to this script.
+        # geometry and belongs to a CAD assembly, not to this script.
         stl_dirs = [exports]
 
     meshes = build_meshes(cad)

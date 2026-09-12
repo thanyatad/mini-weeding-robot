@@ -5,11 +5,11 @@
 | | ต้นฉบับ | แก้ยังไง |
 |---|---|---|
 | `meshes/` | `cad/parameters/parameters.csv` | รัน `python tools/generate_sim_meshes.py` — **ห้ามแก้ไฟล์ด้วยมือ** |
-| `step/` · `stl/` | `cad/fusion/rover.f3d` | แก้ user parameter ใน Fusion แล้ว export ใหม่ |
+| `step/` · `stl/` | CAD assembly (**ยังไม่มี**) | สร้าง assembly จาก `parameters.csv` แล้ว export |
 
 `meshes/` เป็น simplified visual + collision สำหรับ simulator เท่านั้น
-`step/` และ `stl/` เป็น geometry สำหรับผลิต — ยังว่างอยู่จนกว่า Fusion assembly
-จะถูกแก้เป็น V0 ดู [../README.md](../README.md)
+`step/` และ `stl/` เป็น geometry สำหรับผลิต — **ยังว่างเปล่า** assembly ของรถคันเก่า
+ถูกลบไปแล้ว และยังไม่มีใครสร้างของใหม่ ดู [../README.md](../README.md)
 
 ---
 
@@ -48,7 +48,7 @@ point จำนวนมาก ทำให้ solver ช้าลงมาก�
 
 ## Export Checklist
 
-`parameters.csv` เป็นต้นทาง — ทุกอย่างตามหลังมัน ไม่ใช่ตามหลัง Fusion อีกต่อไป
+`parameters.csv` เป็นต้นทาง — ทุกอย่างตามหลังมัน ไม่ใช่ตามหลัง CAD assembly อีกต่อไป
 สองงานนี้แยกกัน ทำคนละเวลาก็ได้:
 
 เมื่อขนาดใน `cad/parameters/parameters.csv` เปลี่ยน (ทำก่อนเสมอ):
@@ -62,11 +62,11 @@ point จำนวนมาก ทำให้ solver ช้าลงมาก�
 [ ] pytest tests/unit/test_urdf_matches_cad.py
 ```
 
-งานมือใน Fusion — แยกต่างหาก ตามทีหลังได้โดยไม่บล็อกใคร (เมื่อต้อง export
-`step/`/`stl/` ใหม่สำหรับผลิต):
+งานผลิต — แยกต่างหาก ตามทีหลังได้โดยไม่บล็อกใคร **ยังทำไม่ได้จนกว่าจะมี assembly**
+(เมื่อต้อง export `step/`/`stl/` ใหม่สำหรับผลิต):
 
 ```text
-[ ] เปิด cad/fusion/rover.f3d แก้ user parameter ให้ตรงกับ parameters.csv
+[ ] สร้าง/เปิด CAD assembly ที่ผูก user parameter ไว้กับ parameters.csv
 [ ] step/    export ชิ้นที่กระทบ
 [ ] stl/     export เฉพาะชิ้นที่ต้องพิมพ์ใหม่
 ```
@@ -74,7 +74,7 @@ point จำนวนมาก ทำให้ solver ช้าลงมาก�
 **origin ของ mesh ต้องตรงกับ link frame ใน URDF** — สำหรับ `meshes/` ตอนนี้
 `tools/generate_sim_meshes.py` เป็นคนรับประกันให้แล้ว (เขียน mesh ที่ origin เดียวกับ
 link เสมอ เป็นเมตร จึงไม่มี scale factor และไม่มีขั้นตอนมือให้พลาด)
-คำเตือนนี้ยังมีผลกับไฟล์ที่ export ด้วยมือจาก Fusion เท่านั้น — เป็นความผิดพลาด
+คำเตือนนี้ยังมีผลกับไฟล์ที่ export ด้วยมือจาก CAD เท่านั้น — เป็นความผิดพลาด
 ที่พบบ่อยที่สุดของงานมือแบบนั้น และอาการคือชิ้นส่วนลอยหรือหมุนผิดจุดใน Isaac
 ดู [../../hardware/mechanical/coordinate-frames.md](../../hardware/mechanical/coordinate-frames.md)
 

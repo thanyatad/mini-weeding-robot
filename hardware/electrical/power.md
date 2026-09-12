@@ -228,4 +228,4 @@ M2 (encoder) จะแก้ข้อนี้ได้เพราะจะว�
 [ ] แบตยึดแน่นและอยู่ต่ำสุด
 ```
 
-ดู [../bom/poc-v2.md](../bom/poc-v2.md#power) และ [wiring.md](wiring.md)
+ดู [../bom/poc-v3.md](../bom/poc-v3.md) และ [wiring.md](wiring.md)

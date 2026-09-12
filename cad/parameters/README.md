@@ -1,8 +1,10 @@
 # CAD Parameters
 
-Fusion 360 user parameters — **ต้นทางของตัวเลขขนาดทุกตัว**
+**ต้นทางของตัวเลขขนาดทุกตัว** อยู่ที่ `parameters.csv` — ไฟล์นั้นคือของจริง
+ไม่ใช่ export จาก CAD
 
-Export เป็น `parameters.csv` แล้ว commit ทุกครั้งที่แก้ขนาด
+แก้ที่ `parameters.csv` แล้ว commit ทุกครั้งที่ขนาดเปลี่ยน CAD assembly ที่จะ
+สร้างขึ้นภายหลังต้องผูก user parameter ตามไฟล์นั้น ไม่ใช่ทางกลับกัน
 
 Rover Base V0 — 650 × 520 mm, ล้อ Ø250, 4WD skid steer, ~35 kg
 Design: [`docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md`](../../docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)
@@ -137,7 +139,7 @@ body_width = max(chassis_plate_width, track_width + wheel_width)
 
 ⚠️ **340 คือ "ค่าสูงสุด" ไม่ใช่ค่าที่มี clearance** — ที่ 340 โครงแตะหน้าในล้อพอดี
 (±170 ทั้งคู่) ไม่เหลือช่องให้ค่าความคลาดเคลื่อน ±2 mm ที่ source spec section 16
-ยอมให้ ตอนขึ้นรูปจริงใน Fusion ควรใช้ **320** เพื่อให้เหลือข้างละ 10 mm ค่า 340
+ยอมให้ ตอนขึ้นรูปจริงควรใช้ **320** เพื่อให้เหลือข้างละ 10 mm ค่า 340
 ในตารางเป็นค่า "ขอบเขต" ที่ test บังคับ ไม่ใช่ค่าที่แนะนำให้ตัดเหล็ก
 
 ---

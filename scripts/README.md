@@ -74,7 +74,7 @@ config_invalid: clear_furrow (690 mm) must exceed
 
 ## CAD → Simulation
 
-หลังแก้ขนาดใน Fusion และ export แล้ว:
+หลังแก้ขนาดใน `cad/parameters/parameters.csv` และ regenerate mesh แล้ว:
 
 ```bash
 ./scripts/import_urdf.sh

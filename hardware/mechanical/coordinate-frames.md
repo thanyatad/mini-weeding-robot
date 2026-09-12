@@ -94,7 +94,7 @@ wheel joint velocity ใน Isaac         cad/urdf + sim/isaac/adapters/
 
 ```text
 X = 0 … 2000 mm     ความยาวร่อง
-Y = 0 … 1000 mm     ความกว้างแปลง
+Y = 0 … 1000 mm     ความกว้างแปลง  ⚠️ ไม่มีที่มาที่ตรวจสอบได้ — ดู docs/simulation.md
 Z = 0               soil reference plane
 ```
 

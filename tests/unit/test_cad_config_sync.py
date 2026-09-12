@@ -2,7 +2,7 @@
 
 Every value in config/ carrying a ``# derived: cad ...`` comment has its origin
 in ``cad/parameters/parameters.csv``.  Nothing regenerates the YAML from the CSV
-by choice — a Fusion-API generator costs more to maintain than this POC is
+by choice — a CAD-API generator costs more to maintain than this POC is
 worth — so the marker is only a promise until something checks it.  This is that
 something.
 
@@ -67,9 +67,9 @@ EQUALITIES: dict[str, tuple[str, str]] = {
 }
 
 #: Markers that are a *formula*, not an equality, and so have a test of their
-#: own.  `wheel_v_max_mm_s: 340  # derived: cad wheel_diameter + 100 RPM` is the
+#: own.  `wheel_v_max_mm_s: 327  # derived: cad wheel_diameter + 25 RPM` is the
 #: reason this list has to exist: a parser that read every marker as "equals the
-#: CAD parameter named here" would assert 340 == 65.
+#: CAD parameter named here" would assert 327 == 250.
 FORMULAS = ("wheel_v_max_mm_s",)
 
 _MARKER = re.compile(
@@ -118,7 +118,7 @@ def test_every_derived_marker_is_covered_by_a_check():
 
 def test_every_marker_cites_a_real_cad_parameter():
     """The marker names its origin without the unit suffix (`cad track_width`).
-    A marker pointing at a parameter that was renamed in Fusion is drift too."""
+    A marker pointing at a parameter that was renamed in the CAD table is drift too."""
     parameters = _cad_parameters()
     unknown = {
         key: source
@@ -216,8 +216,8 @@ def _motor_rpm() -> float:
 def test_wheel_v_max_follows_from_wheel_diameter_and_motor_rpm():
     """The one marker that is a formula: (rpm / 60) x pi x d, rounded.
 
-    config/rover.yaml cites `cad wheel_diameter + motor 100 RPM`, and the RPM
-    half of that comes from hardware/bom/poc-v2.md, not from CAD.
+    config/rover.yaml cites `cad wheel_diameter + motor 25 RPM`, and the RPM
+    half of that comes from hardware/bom/poc-v3.md, not from CAD.
     """
     wheel_diameter_mm = _cad_parameters()["wheel_diameter_mm"]
     expected = (_motor_rpm() / 60.0) * math.pi * wheel_diameter_mm

@@ -120,7 +120,7 @@ def test_drive_0_40_turns_on_the_spot(sim):
     strict=False,
     reason="Stage 3: skid-steer yaw reaches only a few percent of nominal on flat "
     "ground.  Not a sign or unit fault - the wheels hold their commanded speed to "
-    "0.5% and the drive uses 0.007 of the 0.4903 N.m it is allowed.  Friction is "
+    "0.5% and the drive uses a small fraction of the 10 N.m it is allowed.  Friction is "
     "not the knob either: 0.15 -> 0.02 moves it 1.10 -> 1.57 deg/s.  See "
     "sim/isaac/robots/rover/config.yaml.",
 )

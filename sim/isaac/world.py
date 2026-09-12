@@ -55,7 +55,7 @@ def build_world(config: dict[str, Any]) -> Any:
     """Create the world, the ground and the rover.  Does not reset or step.
 
     The rover needs no spawn offset: base_link's origin is the soil reference
-    plane, the wheel axles sit at +0.035 m and the wheel radius is 0.035 m, so
+    plane, the wheel axles sit at +0.125 m and the wheel radius is 0.125 m, so
     the wheels rest exactly on Z = 0 with base_link at the origin.
     """
     from isaacsim.core.api import World

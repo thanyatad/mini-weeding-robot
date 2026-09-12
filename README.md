@@ -23,7 +23,7 @@ MVP แรกทำสองอย่างเท่านั้น: **เดิ
 เหตุผล: mobility + perception เป็นความเสี่ยงที่ยังไม่ถูกพิสูจน์
 แก้ทีเดียวพร้อม actuator จะแยกไม่ออกว่าอะไรพัง
 
-Design เต็ม: **[docs/superpowers/specs/2026-09-12-rover-mvp-design.md](docs/superpowers/specs/2026-09-12-rover-mvp-design.md)**
+Design เต็ม: **[docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)**
 
 Scale-up เป็นเครื่องภาคสนามขนาดจริง (650 × 520 mm, ล้อ Ø250, ~35 kg — ไม่ใช่
 เครื่องเดโมบนโต๊ะ 145 mm เดิม): **[docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md)**
@@ -180,7 +180,7 @@ consistency simulation.soil.variation_mm == bed.soil_variation_mm
 
 | Path | Responsibility | Docs |
 |---|---|---|
-| `cad/` | Fusion source, parameters, exports, URDF — **ต้นทางของขนาดทุกตัว** | [cad/README.md](cad/README.md) |
+| `cad/` | parameters, exports, URDF — **ต้นทางของขนาดทุกตัว** | [cad/README.md](cad/README.md) |
 | `hardware/` | เครื่องจริง — BOM, ขนาด, ประกอบ, สายไฟ, coordinate frames | [hardware/README.md](hardware/README.md) |
 | `sim/isaac/` | Physics, แปลงดิน, sensor, rover model, simulation I/O | [docs/simulation.md](docs/simulation.md) |
 | `controller/` | Robot brain — row follower, state machine, safety, startup checks | [controller/README.md](controller/README.md) |
@@ -200,7 +200,7 @@ Full architecture rationale: **[docs/architecture.md](docs/architecture.md)**
 ## Asset Pipeline
 
 Geometry ทั้งหมดเกิดที่ `cad/parameters/parameters.csv` แล้วไหลไป simulation —
-ไม่มีใครวาดของซ้ำสองที่ `rover.f3d` **ไม่ใช่** ต้นทางของ geometry ที่ sim ใช้
+ไม่มีใครวาดของซ้ำสอง CAD assembly (ซึ่งตอนนี้ยังไม่มี) **ไม่ใช่** ต้นทางของ geometry ที่ sim ใช้
 (ดู [cad/README.md#pipeline](cad/README.md#pipeline) สำหรับรายละเอียดเต็ม):
 
 ```text
@@ -220,7 +220,7 @@ cad/parameters/parameters.csv          ◄── source of truth: geometry
    │                                          ▼
    │                    sim/isaac/robots/rover/rover.usd         physics tuning, commit
    │
-   └── Fusion 360 (งานมือ)  cad/fusion/rover.f3d ──> cad/exports/step/ · cad/exports/stl/
+   └── CAD assembly (งานมือ — ยังไม่มี) ────────> cad/exports/step/ · cad/exports/stl/
                                                        (สำหรับผลิตเท่านั้น)
 ```
 
@@ -395,6 +395,7 @@ M4 (เลี้ยวเข้าร่องถัดไป + cover ทั้�
 
 | Document | Status |
 |---|---|
-| [docs/superpowers/specs/2026-09-12-rover-mvp-design.md](docs/superpowers/specs/2026-09-12-rover-mvp-design.md) | **Current** — rover 4 ล้อ, row following, MVP วิ่ง + มองเห็น |
-| [docs/superpowers/specs/2026-09-12-weeding-bed-design.md](docs/superpowers/specs/2026-09-12-weeding-bed-design.md) | Superseded — gantry คร่อมแปลง · **ส่วน tool ยังใช้ได้ที่ M3** |
+| [docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md](docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md) | **Current** — Rover Base V0, 650 × 520 mm, ล้อ Ø250 |
+
+spec รุ่นก่อน (rover MVP ล้อ Ø70 และ gantry คร่อมแปลง) ถูกลบออกจาก tree แล้ว — อยู่ใน git history
 | `mini-smart-weeding-table-repository-architecture.md` | ลบแล้ว — design โต๊ะ + ถาด อยู่ใน git history เท่านั้น |

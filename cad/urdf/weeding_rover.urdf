@@ -205,7 +205,8 @@
   <!--    (713 mm) and therefore its gain.  There is no formula from      -->
   <!--    geometry to gain and no test that catches a change.             -->
   <!-- camera_down   x 0,     z 0.850, looking straight down              -->
-  <!--    the 66 deg HFOV corridor coverage calculation depends on 0.850  -->
+  <!--    the down camera's corridor coverage depends on this 0.850:       -->
+  <!--    2 x atan(325 / 850) = 41.9 deg, so the lens must be >= 45 deg     -->
   <!-- ================================================================== -->
   <link name="camera_front_link">
     <inertial>

@@ -66,7 +66,7 @@ V1 acceptance บังคับว่าต้อง **วัด** `crop_foliag
 ถ้าวัดแล้วได้มากกว่า 30 → `clear_furrow` แคบลง → **invariant ข้อ 5 อาจ fail**
 นั่นคือพฤติกรรมที่ถูกต้อง ไม่ใช่ bug
 
-### 3. mesh ของ rover — primitive ก่อน หรือรอ Fusion
+### 3. mesh ของ rover — primitive ก่อน หรือรอ CAD assembly
 
 `cad/urdf/weeding_rover.urdf` ไม่มี และ `cad/exports/` ว่างทั้งสามโฟลเดอร์
 

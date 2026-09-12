@@ -41,7 +41,7 @@ over "weeding_rover"
         def Scope "Materials"
         {
             # Bound to the four wheel collision cylinders below.  base_link's
-            # collision box is deliberately left on the default material: it is
+            # collision primitives are deliberately left on the default material: they are
             # not meant to touch the ground, and if it does, that is a
             # clearance problem to see rather than one to tune away.
             # frictionCombineMode "min" makes THIS material the only friction

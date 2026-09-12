@@ -1,31 +1,30 @@
 # cad
 
-> ### ⚠️ `cad/fusion/rover.f3d` ยังเป็นรถคันเก่า (ล้อ Ø70)
+> ### ⚠️ ยังไม่มี geometry สำหรับงานผลิต
 >
-> `parameters.csv` ถูกอัปเดตเป็น Rover Base V0 (650 × 520, ล้อ Ø250) แล้ว
-> แต่ **Fusion assembly ยังไม่ถูกแก้** — เป็นงานมือที่ยังไม่มีใครทำ
+> `parameters.csv` · `urdf/` · `exports/meshes/` เป็น Rover Base V0
+> (650 × 520, ล้อ Ø250) ครบแล้ว — sim ใช้งานได้เต็มที่
+>
+> แต่ **`exports/step/` และ `exports/stl/` ว่างเปล่า** Fusion assembly ของรถคันเก่า
+> (ล้อ Ø70) ถูกลบทิ้งแล้วเพราะอธิบายเครื่องคนละขนาด และยังไม่มีใครสร้างของใหม่
 >
 > ```text
-> parameters.csv · urdf/ · exports/meshes/   ✓ V0 650 × 520
-> fusion/rover.f3d · exports/step/ · exports/stl/   ✗ ยังไม่มี V0
+> parameters.csv · urdf/ · exports/meshes/   ✓ V0 650 × 520 (generated)
+> exports/step/ · exports/stl/               ✗ ยังไม่มี — ต้องสร้าง assembly ใหม่
 > ```
 >
-> วิธีทำต่อ: เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
-> (อย่าแก้ sketch ตรง ๆ) แล้ว export `step/` + `stl/` ใหม่
+> ใครสร้าง assembly ใหม่ **ให้ขึ้นรูปจาก `parameters.csv`** ไม่ใช่จากไฟล์เก่า
+> และเมื่อสร้างแล้ว assembly นั้นเป็นเจ้าของ `step/`/`stl/` เท่านั้น —
+> `parameters.csv` ยังเป็นต้นทางของ geometry ต่อไป
 >
-> `exports/meshes/` **ไม่ต้อง** export จาก Fusion อีกต่อไป —
-> `tools/generate_sim_meshes.py` สร้างจาก `parameters.csv` ให้แล้ว
+> `exports/meshes/` **ไม่เกี่ยวกับงานนี้เลย** — `tools/generate_sim_meshes.py`
+> สร้างจาก `parameters.csv` ให้แล้ว
 
 Mechanical source of truth — **เรขาคณิตทั้งหมดต้นทางที่ `cad/parameters/parameters.csv`**
-งานผลิต (STEP / STL) มาจาก Fusion โดยตรง แต่ **ไม่ใช่ต้นทางของ geometry ที่ sim ใช้**
-ดู [Pipeline](#pipeline) ด้านล่าง
+งานผลิต (STEP / STL) ต้องมี CAD assembly ซึ่งตอนนี้**ยังไม่มี** ดู [Pipeline](#pipeline) ด้านล่าง
 
 ```text
 cad/
-├── fusion/
-│   ├── rover.f3d               master assembly (Fusion 360)
-│   └── components/             ชิ้นส่วนย่อย
-│
 ├── parameters/
 │   ├── README.md               นิยาม parameter + ตาราง derived
 │   └── parameters.csv          ต้นทางของ geometry — แก้ตรงนี้ (commit ทุกครั้งที่แก้ขนาด)
@@ -44,7 +43,7 @@ cad/
 
 ## Pipeline
 
-`cad/parameters/parameters.csv` **คือต้นทางของ geometry** — ไม่ใช่ `rover.f3d`
+`cad/parameters/parameters.csv` **คือต้นทางของ geometry** — ไม่ใช่ CAD assembly
 สอง path ไหลออกจากมันแยกกัน และไม่มี path ไหนขึ้นกับอีก path (S11):
 
 ```text
@@ -64,19 +63,19 @@ cad/parameters/parameters.csv          ◄── source of truth: geometry
    │                                          ▼
    │                    sim/isaac/robots/rover/rover.usd         ◄── override layer, commit
    │
-   └── Fusion 360 (งานมือ)  cad/fusion/rover.f3d ──> cad/exports/step/ · cad/exports/stl/
-                                                       (สำหรับผลิต / review / ส่งร้าน เท่านั้น)
+   └── CAD assembly (งานมือ — ยังไม่มี) ──> cad/exports/step/ · cad/exports/stl/
+                                             (สำหรับผลิต / review / ส่งร้าน เท่านั้น)
 ```
 
 `tools/generate_sim_meshes.py` อ่าน `parameters.csv` แล้วเขียน mesh + inertia
-tensor ให้ sim โดยตรง — ไม่ผ่าน Fusion เลย เพราะ Fusion เป็นงานมือ ถ้า sim
-ต้องรอ assembly งาน development จะหยุด `cad/exports/meshes/` และ
+tensor ให้ sim โดยตรง — ไม่ผ่าน CAD assembly เลย เพราะงาน assembly เป็นงานมือ
+ถ้า sim ต้องรอ งาน development จะหยุด `cad/exports/meshes/` และ
 `cad/urdf/meshes/` จึงเป็นไฟล์ **generated** ห้ามแก้ด้วยมือ — แก้ที่
 `parameters.csv` แล้วรัน generator ใหม่เสมอ
 
-`rover.f3d` ยังเป็น**พารามิเตอร์ assembly ของจริง** และเป็นเจ้าของ
-`cad/exports/step/` กับ `cad/exports/stl/` สำหรับงานผลิต แต่**ไม่ใช่ต้นทางของ
-geometry ที่ sim ใช้** — ตามมาทีหลังได้โดยไม่บล็อกใคร (design §9.1)
+**path ล่างยังว่าง** ไม่มี assembly ในโปรเจกต์แล้ว งานผลิตจึงยังทำไม่ได้จนกว่า
+จะมีคนสร้างขึ้นมาใหม่จาก `parameters.csv` — ซึ่งตามมาทีหลังได้โดยไม่บล็อกใคร
+(design §9.1) นี่คือเหตุผลที่ sim ไม่ถูกผูกกับมันตั้งแต่แรก
 
 ### ทำไมต้องแยก 2 USD layer
 
@@ -125,15 +124,20 @@ pytest tests/unit/test_urdf_matches_cad.py      # จับ URDF ที่ยั
 **อย่าแก้ค่าใน `config/rover.yaml` เพื่อให้ test ผ่าน** ถ้าต้นเหตุคือ CAD เปลี่ยน —
 ต้องตามให้ค่าใน config สะท้อนของจริง
 
-### งานมือใน Fusion — แยกต่างหาก ไม่บล็อกงาน sim
+### งานผลิต — แยกต่างหาก ไม่บล็อกงาน sim
 
-STEP/STL งานผลิตยังตามหลัง Fusion เหมือนเดิม แต่เป็นคนละ track จาก 3 ขั้นข้างบน
-และตามทีหลังได้เสมอโดยไม่บล็อกใคร (design §9.1) — sim ไม่ต้องรอ assembly ที่ยังไม่เสร็จ:
+STEP/STL งานผลิตเป็นคนละ track จาก 3 ขั้นข้างบน และตามทีหลังได้เสมอโดยไม่บล็อกใคร
+(design §9.1) — sim ไม่ต้องรอ assembly ที่ยังไม่มี
 
-1. เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
-   (อย่าแก้ sketch ตรง ๆ)
+**ตอนนี้ track นี้ยังว่าง** ไม่มี CAD assembly ในโปรเจกต์ ขั้นตอนเมื่อมีคนสร้าง:
+
+1. สร้าง assembly ใหม่โดย**ขึ้นรูปจากตัวเลขใน `parameters.csv`** และผูกเป็น
+   user parameter ไว้ (อย่า hard-code ลง sketch) เพื่อให้รอบหน้าแก้ที่เดียว
 2. Export `cad/exports/step/` ชิ้นที่กระทบ
 3. Export `cad/exports/stl/` เฉพาะชิ้นที่ต้องพิมพ์ใหม่
+
+assembly ที่สร้างใหม่เป็นเจ้าของ `step/`/`stl/` เท่านั้น — ไม่ใช่ต้นทางของ
+geometry และไม่มีอะไรใน sim ขึ้นกับมัน
 
 ---
 

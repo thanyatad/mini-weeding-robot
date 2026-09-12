@@ -67,7 +67,7 @@ def test_a_furrow_to_the_left_steers_left():
 def test_a_left_turn_runs_the_right_wheels_faster():
     """omega > 0 is CCW with Z up, which is a left turn.  The outside wheel of
     a left turn is the right one."""
-    wheels = mix(100.0, +40.0, track_width_mm=120.0, wheel_v_max_mm_s=202.0)
+    wheels = mix(100.0, +40.0, track_width_mm=430.0, wheel_v_max_mm_s=327.0)
     assert wheels.right_mm_s > wheels.left_mm_s
 
 

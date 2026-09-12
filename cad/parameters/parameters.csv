@@ -1,7 +1,8 @@
-# Fusion 360 user parameters — ต้นทางของตัวเลขขนาดทุกตัว
+# Dimension parameters — ต้นทางของตัวเลขขนาดทุกตัว
 #
-# ถอดมาจาก cad/parameters/README.md#parameters ตรง ๆ — ไฟล์นี้คือสิ่งที่ export
-# ออกจาก Fusion แล้ว commit ทุกครั้งที่แก้ขนาด ห้ามแก้เพื่อให้ test ผ่าน
+# ไฟล์นี้คือ "ของจริง" ไม่ใช่ export จากที่อื่น แก้ที่นี่แล้ว commit ทุกครั้งที่
+# ขนาดเปลี่ยน ห้ามแก้เพื่อให้ test ผ่าน
+# CAD assembly ที่จะสร้างขึ้นภายหลังต้องผูก user parameter ตามไฟล์นี้ ไม่ใช่ทางกลับกัน
 #
 # Rover Base V0 — 650 x 520 mm, ล้อ O250, 4WD skid steer, ~35 kg
 # Design: docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md

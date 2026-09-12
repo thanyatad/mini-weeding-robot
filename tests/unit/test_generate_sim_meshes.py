@@ -2,7 +2,7 @@
 
 cad/README.md separates exports/meshes/ (simplified visual + collision, sim
 only) from exports/step|stl (manufacturing).  Only the first is generated here.
-Manufacturing geometry stays Fusion's, and this script never touches it.
+Manufacturing geometry belongs to a CAD assembly, and this script never touches it.
 
 The point is that a dimension change cannot leave a stale mesh behind: run the
 script, and the mesh is the CSV.

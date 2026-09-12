@@ -287,7 +287,7 @@ crop_row_misaligned                   → row_curved (ครอบคลุม�
 
 `soil_high_spot` / `soil_low_spot` / `weed_inside_crop_row` **ไม่ถูกลบทิ้ง** —
 ยกไปที่ M3 พร้อม tool นิยามเดิมใน
-[spec แปลงดิน §9](../docs/superpowers/specs/2026-09-12-weeding-bed-design.md) ยังถูกต้อง
+spec แปลงดินรุ่นก่อน §9 (ลบออกจาก tree แล้ว — อยู่ใน git history) ยังถูกต้อง
 
 ---
 

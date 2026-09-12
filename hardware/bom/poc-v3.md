@@ -1,7 +1,7 @@
 # BOM — POC v3 (Rover Base V0, 650 × 520 mm)
 
 **Status:** Requirement envelope — **ยังไม่เลือก part number**
-**Supersedes:** [`poc-v2.md`](poc-v2.md) ทั้งฉบับ (เครื่องคนละขนาด ไม่ใช่รุ่นปรับปรุง)
+**Supersedes:** BOM รุ่น v2 ทั้งฉบับ (เครื่องคนละขนาด ไม่ใช่รุ่นปรับปรุง) — ไฟล์นั้นถูกลบออกจาก tree แล้ว อยู่ใน git history
 **Design:** [`docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md`](../../docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md) §8
 
 ---

@@ -141,13 +141,12 @@ def test_the_urdf_velocity_limit_is_the_wheel_limit_carried_across_the_units():
 @pytest.mark.parametrize("v, omega, _left, _right", GOLDEN)
 def test_no_vector_exceeds_the_velocity_limit_the_urdf_declares(v, omega, _left, _right):
     """A joint target above the URDF limit is refused by Isaac silently, and the
-    omega achieved stops matching the omega commanded.
+        omega achieved stops matching the omega commanded.
 
-    Once the URDF is regenerated in a later task, it will declare 2.616 rad/s
-    (327 mm/s / 125 mm, the new wheel velocity limit). The adapter is checked
-    against that future value. The rounding allowance of 0.5e-4 rad/s accounts
-    for the truncation of 2.616 to four decimals (2.6160) and any floating-point
-    representation differences in the conversion.
+    The URDF declares 2.616 rad/s (327 mm/s / 125 mm), and the adapter is
+        checked against it. The rounding allowance of 0.5e-4 rad/s accounts for the
+        truncation of 2.616 to four decimals (2.6160) and any floating-point
+        representation differences in the conversion.
     """
     rounding = 0.5e-4
     sides = adapter().wheel_velocities(v, omega)
@@ -161,10 +160,11 @@ def test_no_vector_exceeds_the_velocity_limit_the_urdf_declares(v, omega, _left,
 def test_the_adapter_radius_is_the_urdf_collision_cylinder_in_metres():
     """The one place mm and m meet on this side of the boundary.
 
-    The visual mesh is 0.0345 m after vertex clustering; collision is 0.035 m
-    and collision is what physics uses, so that is the radius the adapter must
-    divide by.  A slip here does not crash - the rover just drives at the wrong
-    scale, which reads as a tuning problem rather than an arithmetic one.
+    The visual mesh is a 32-segment cylinder inscribed in the 0.125 m radius;
+    collision is the exact 0.125 m cylinder, and collision is what physics uses,
+    so that is the radius the adapter must divide by.  A slip here does not
+    crash - the rover just drives at the wrong scale, which reads as a tuning
+    problem rather than an arithmetic one.
     """
     radius_m = float(
         next(
@@ -187,7 +187,9 @@ def test_from_config_reads_the_geometry_rather_than_repeating_it():
 
 
 def test_degrees_per_second_become_radians_per_second():
-    """omega_max 40 deg/s is 0.698 rad/s.  At v = 0 the side speed is
+    """40 deg/s is 0.698 rad/s.  The probe value is deliberately above the
+    shipped omega_max of 25 - the conversion must hold for any input, not only
+    for values the rover is allowed to command.  At v = 0 the side speed is
     omega_rad * track/2, so the conversion is visible in the answer."""
     sides = adapter().wheel_velocities(0.0, 40.0)
     expected_mm_s = math.radians(40.0) * TRACK_WIDTH_MM / 2.0
