@@ -16,6 +16,7 @@ import pytest
 from controller.config import get, load_config, with_overrides
 from controller.motion import RowEstimate
 from controller.rover import Pose
+from controller.workflow import ROW_END_SUSPECTED, ErrorCode, RoverState
 from tests.harness import FakeLoop, FakeRowSensor, straight_row
 
 
@@ -186,3 +187,121 @@ class TestHarnessUsesRealConfig:
     def test_the_loop_refuses_a_backend_with_untuned_gains(self):
         with pytest.raises(ValueError, match="esp32"):
             FakeLoop(row=straight_row(), backend="esp32")
+
+
+class TestARowThatEnds:
+    """A row with a length, so the closed loop can reach the end of one.
+
+    `straight_row()` runs forever, which is right for a convergence test and
+    useless for an ending.  Bounding it is the only thing the harness needs in
+    order to produce the invalid estimates the watchdog counts: past the end
+    there is simply no furrow to sample.
+    """
+
+    def test_an_unbounded_row_never_runs_out(self):
+        sensor = FakeRowSensor(straight_row())
+        assert sensor.estimate(Pose(x_mm=10_000.0, y_mm=0.0, heading_deg=0.0)).valid
+
+    def test_the_estimate_is_valid_well_inside_a_bounded_row(self):
+        sensor = FakeRowSensor(straight_row(length_mm=1000.0))
+        assert sensor.estimate(Pose(x_mm=100.0, y_mm=0.0, heading_deg=0.0)).valid
+
+    def test_the_estimate_goes_invalid_before_the_end_is_reached(self):
+        """The camera looks ahead, so the furrow leaves the frame while the
+        rover is still on it — FAR_LOOKAHEAD_MM short of the end."""
+        sensor = FakeRowSensor(straight_row(length_mm=1000.0))
+        assert not sensor.estimate(Pose(x_mm=900.0, y_mm=0.0, heading_deg=0.0)).valid
+
+    def test_a_row_carries_its_length(self):
+        assert straight_row().length_mm is None
+        assert straight_row(length_mm=2000.0).length_mm == 2000.0
+
+
+class TestGreenFractionIsDeclaredNotMeasured:
+    """The harness has no pixels.  green_fraction is a number the caller states
+    in order to stage one of the two endings of §5.4 — not something counted
+    off an image, and it must not start looking like one."""
+
+    def test_it_is_constant_wherever_the_rover_is(self):
+        sensor = FakeRowSensor(straight_row())
+        readings = {
+            sensor.estimate(Pose(x_mm=x, y_mm=20.0, heading_deg=5.0)).green_fraction
+            for x in (0.0, 100.0, 500.0)
+        }
+        assert readings == {0.4}
+
+    def test_the_caller_states_what_an_invalid_frame_claims(self):
+        sensor = FakeRowSensor(straight_row(length_mm=500.0), green_fraction_invalid=0.9)
+        est = sensor.estimate(Pose(x_mm=450.0, y_mm=0.0, heading_deg=0.0))
+
+        assert not est.valid
+        assert est.green_fraction == 0.9
+
+    def test_the_default_invalid_frame_claims_no_green(self):
+        sensor = FakeRowSensor(straight_row(length_mm=500.0))
+        est = sensor.estimate(Pose(x_mm=450.0, y_mm=0.0, heading_deg=0.0))
+
+        assert not est.valid
+        assert est.green_fraction == 0.0
+
+
+class TestTheLoopRunsTheRealWorkflow:
+    """FakeLoop drives the actual RowRun, watchdog and state machine — not a
+    stand-in for them.  A harness that stops the rover its own way would be
+    testing the harness."""
+
+    def test_it_starts_in_the_row_having_passed_validation(self):
+        sim = FakeLoop(row=straight_row())
+        assert sim.state is RoverState.DRIVING_ROW
+
+    def test_a_run_that_never_ends_is_still_in_the_row(self):
+        sim = FakeLoop(row=straight_row())
+        sim.run(seconds=3.0)
+
+        assert sim.state is RoverState.DRIVING_ROW
+        assert sim.stop_reason is None
+        assert sim.error_code is None
+
+    def test_the_end_of_the_row_stops_the_run_normally(self):
+        """row_end.yaml, closed loop: green gone, so this is the end of the row
+        and not a fault."""
+        sim = FakeLoop(row=straight_row(length_mm=1000.0))
+        sim.run(seconds=30.0)
+
+        assert sim.state is RoverState.STOPPED
+        assert sim.stop_reason == ROW_END_SUSPECTED
+        assert sim.error_code is None
+
+    def test_losing_the_row_while_green_remains_is_a_fault(self):
+        """row_lost.yaml, closed loop: the same geometry and the same three
+        invalid frames, and only green_fraction differs."""
+        row = straight_row(length_mm=1000.0)
+        sim = FakeLoop(row=row, sensor=FakeRowSensor(row, green_fraction_invalid=0.9))
+        sim.run(seconds=30.0)
+
+        assert sim.state is RoverState.ERROR
+        assert sim.error_code is ErrorCode.ROW_LOST
+        assert sim.stop_reason is None
+
+    def test_it_stops_driving_once_the_run_has_ended(self):
+        sim = FakeLoop(row=straight_row(length_mm=1000.0))
+        sim.run(seconds=30.0)
+
+        assert sim.history[-1].v_mm_s == 0.0
+        assert sim.history[-1].omega_deg_s == 0.0
+
+    def test_it_does_not_stop_at_the_first_invalid_frame(self):
+        """row_loss_frames is 3.  A harness that stopped on the first one would
+        make crop_gap_midrow untestable, because every gap would end the run."""
+        sim = FakeLoop(row=straight_row(length_mm=1000.0))
+        sim.run(seconds=30.0)
+
+        invalid_samples = [sample for sample in sim.history if not sample.valid]
+        assert len(invalid_samples) >= 3
+
+    def test_it_ran_most_of_the_row_before_stopping(self):
+        """The stop belongs at the end of the row, not somewhere in the middle."""
+        sim = FakeLoop(row=straight_row(length_mm=1000.0))
+        sim.run(seconds=30.0)
+
+        assert sim.distance_travelled_mm > 500.0

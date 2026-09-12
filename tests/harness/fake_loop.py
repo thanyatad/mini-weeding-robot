@@ -2,7 +2,7 @@
 
     FakeRover      integrate (v, omega) -> internal pose      (kinematic only)
     FakeRowSensor  pose + furrow equation -> RowEstimate
-    RowFollower    RowEstimate -> (v, omega)
+    RowRun         watchdog -> RowFollower -> state machine
                           +--> back into FakeRover
 
 This answers "do these gains converge, and do they swing out of the furrow" in
@@ -10,9 +10,18 @@ milliseconds, in CI, before Isaac exists.  Both halves of that question matter:
 gains that converge quickly but leave the furrow on the way are gains that
 drive into a crop, and a test that reads only the final value passes them.
 
+The harness plays the world and the camera.  Everything downstream of the
+estimate -- the row-loss watchdog, the follower, the state machine -- is the
+code that will run on the rover, so a run that ends in STOPPED(row_end_
+suspected) ended there through the real transitions.
+
 What the harness does NOT model, so that nothing built on it is mistaken for a
 simulation result: wheel slip, motor deadband, soil, image noise, valley
-detection, or any latency between seeing and steering.
+detection, or any latency between seeing and steering.  ``green_fraction`` is
+declared by the caller rather than counted, because there is nothing here to
+count -- see GREEN_FRACTION_VALID below.  Which means the harness can stage
+either ending of §5.4, and can prove neither that the configured threshold
+separates them: that needs rendered crops, at V1.
 """
 
 from __future__ import annotations
@@ -23,6 +32,8 @@ from dataclasses import dataclass
 from controller.config import get, load_config
 from controller.motion import RowEstimate, RowFollower
 from controller.rover import FakeRover, Pose
+from controller.safety import RowLossWatchdog
+from controller.workflow import ErrorCode, Event, RoverState, RowRun, StateMachine
 from tests.harness.row import Row
 
 #: Front camera geometry, from cad/parameters/README.md.  Height 180 mm at a
@@ -40,6 +51,14 @@ FAR_LOOKAHEAD_MM = 360.0
 #: harness assumption, and it sets how many image-space units one mm of offset
 #: is worth -- which is what the gains are tuned against.
 HFOV_DEG = 60.0
+
+#: What the harness *declares* green_fraction to be.  Not measured: there are
+#: no pixels here, and nothing counts crops.  The caller states which of §5.4's
+#: two worlds it is staging -- the green ran out (the end of the row) or the
+#: green is still there and the line is not (a lost row) -- and the watchdog
+#: reads that declaration exactly as it would read a real one.
+GREEN_FRACTION_VALID = 0.4
+GREEN_FRACTION_INVALID = 0.0
 
 
 class FakeRowSensor:
@@ -60,27 +79,33 @@ class FakeRowSensor:
         near_lookahead_mm: float = NEAR_LOOKAHEAD_MM,
         far_lookahead_mm: float = FAR_LOOKAHEAD_MM,
         hfov_deg: float = HFOV_DEG,
+        green_fraction_valid: float = GREEN_FRACTION_VALID,
+        green_fraction_invalid: float = GREEN_FRACTION_INVALID,
     ) -> None:
         self.row = row
         self.camera_height_mm = camera_height_mm
         self.near_lookahead_mm = near_lookahead_mm
         self.far_lookahead_mm = far_lookahead_mm
         self._tan_half_hfov = math.tan(math.radians(hfov_deg / 2.0))
+        self.green_fraction_valid = green_fraction_valid
+        self.green_fraction_invalid = green_fraction_invalid
 
     def estimate(self, pose: Pose) -> RowEstimate:
         near = self._image_offset(pose, self.near_lookahead_mm)
         far = self._image_offset(pose, self.far_lookahead_mm)
 
         if near is None or far is None or abs(near) > 1.0 or abs(far) > 1.0:
-            # The furrow has left the frame.  In the real estimator this is one
-            # of two very different things, told apart by green_fraction; the
-            # harness has no crops to count, so it claims neither.
+            # The furrow has left the frame -- it ran out, or the rover is
+            # pointing off it.  In the real estimator this is one of two very
+            # different things, told apart by green_fraction (§5.4).  The
+            # harness has no crops to count, so it reports the value the caller
+            # declared rather than inventing one from geometry.
             return RowEstimate(
                 valid=False,
                 lateral_err=0.0,
                 heading_err=0.0,
                 confidence=0.0,
-                green_fraction=0.0,
+                green_fraction=self.green_fraction_invalid,
             )
 
         return RowEstimate(
@@ -90,7 +115,7 @@ class FakeRowSensor:
             # Constants: the harness has no valley to score and no pixels to
             # count.  They are here so the struct is complete, not to be read.
             confidence=1.0,
-            green_fraction=0.4,
+            green_fraction=self.green_fraction_valid,
         )
 
     def _image_offset(self, pose: Pose, lookahead_mm: float) -> float | None:
@@ -127,7 +152,11 @@ class FakeRowSensor:
             dy = self.row.centre_offset_mm(x_mm) - pose.y_mm
             return dx * cos_h + dy * sin_h
 
-        low, high = pose.x_mm, pose.x_mm + 4.0 * lookahead_mm
+        low = pose.x_mm
+        # Never sample past the end of the furrow: beyond it there is nothing
+        # to find, and the bracket check below turns that into the invalid
+        # estimate the watchdog counts.
+        high = self.row.furthest_x_mm(pose.x_mm + 4.0 * lookahead_mm)
         if forward_of(low) > lookahead_mm or forward_of(high) < lookahead_mm:
             # The furrow does not reach that far ahead of where the rover is
             # pointing; there is nothing to sample.
@@ -193,6 +222,20 @@ class FakeLoop:
             heading_deg=start_heading_deg,
         )
 
+        # The real workflow, not a stand-in for it: the harness plays the world
+        # and the camera, and everything downstream of the estimate is the code
+        # that will run on the rover.  A harness that stopped the rover its own
+        # way would be a harness testing itself.
+        self.machine = StateMachine()
+        self.row_run = RowRun(
+            machine=self.machine,
+            rover=self.rover,
+            follower=self.follower,
+            watchdog=RowLossWatchdog.from_config(self.rover, self.config),
+        )
+        self.machine.fire(Event.VALIDATE_OK)
+        self.row_run.start()
+
         self.loop_hz = float(get(self.config, "perception.loop_hz"))
         self._dt_s = 1.0 / self.loop_hz
 
@@ -206,29 +249,57 @@ class FakeLoop:
         self.history: list[LoopSample] = []
 
     def run(self, seconds: float) -> FakeLoop:
-        """Advance the loop.  May be called again to continue where it stopped."""
+        """Advance the loop.  May be called again to continue where it stopped.
+
+        Stops early once the run leaves DRIVING_ROW -- the row ended, or the
+        watchdog tripped -- because that is where §5.5's ``while`` ends.
+        """
         if not self.history:
             self.history.append(self._sample(self.sensor.estimate(self.rover.pose), 0.0, 0.0))
 
         for _ in range(round(seconds * self.loop_hz)):
-            est = self.sensor.estimate(self.rover.pose)
-            if est.valid:
-                v_mm_s, omega_deg_s = self.follower.step(est)
-                self.rover.drive(v_mm_s, omega_deg_s)
-            else:
-                # The real controller hands this to the row-loss watchdog, which
-                # is V1.  Stopping is the honest stand-in: it is what the
-                # watchdog does once row_loss_frames run out.
-                v_mm_s, omega_deg_s = 0.0, 0.0
-                self.rover.stop()
+            if self.state is not RoverState.DRIVING_ROW:
+                break
 
+            self.row_run.step(self.sensor.estimate(self.rover.pose))
+
+            # Read back what was commanded rather than what was computed: an
+            # invalid frame commands nothing at all, and the standing command
+            # is what the rover actually carries into the next step.
+            commanded = self.rover.get_drive_state()["commanded"]
             self.rover.step(self._dt_s)
             self._t_s += self._dt_s
             self.history.append(
-                self._sample(self.sensor.estimate(self.rover.pose), v_mm_s, omega_deg_s)
+                self._sample(
+                    self.sensor.estimate(self.rover.pose),
+                    commanded["v_mm_s"],
+                    commanded["omega_deg_s"],
+                )
             )
 
         return self
+
+    @property
+    def state(self) -> RoverState:
+        return self.machine.state
+
+    @property
+    def stop_reason(self) -> str | None:
+        return self.machine.stop_reason
+
+    @property
+    def error_code(self) -> ErrorCode | None:
+        return self.machine.error_code
+
+    @property
+    def distance_travelled_mm(self) -> float:
+        """How far along the bed the rover got.
+
+        Along bed X, not arc length: the question a scenario asks is how much
+        of the row was covered, and the rover has no odometry to answer it with
+        anyway -- this is the harness reading the world it plays.
+        """
+        return self.rover.pose.x_mm  # the rover always starts at bed X = 0
 
     @property
     def min_clearance_mm(self) -> float:
