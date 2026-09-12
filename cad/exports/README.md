@@ -19,7 +19,7 @@
 |---|---|---|---|
 | `step/` | STEP (.step) | งานผลิต, ส่งร้าน, review ทางวิศวกรรม | เต็ม |
 | `stl/` | STL (.stl) | 3D print แชสซี / bracket / ขายึดมอเตอร์ / เสากล้อง | สูง |
-| `meshes/` | OBJ / DAE | visual + collision ใน simulation | **simplified** |
+| `meshes/` | OBJ / STL | visual + collision ใน simulation | **simplified** |
 
 ---
 

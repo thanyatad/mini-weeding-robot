@@ -28,7 +28,7 @@ cad/
 │
 ├── parameters/
 │   ├── README.md               นิยาม parameter + ตาราง derived
-│   └── parameters.csv          export จาก Fusion (commit ทุกครั้งที่แก้ขนาด)
+│   └── parameters.csv          ต้นทางของ geometry — แก้ตรงนี้ (commit ทุกครั้งที่แก้ขนาด)
 │
 ├── exports/
 │   ├── step/                   งานผลิต / review / ส่งร้าน
@@ -100,14 +100,13 @@ Friction ของล้อกับ heightfield เป็นค่าที่ 
 
 ## กฎการแก้ขนาด
 
-เมื่อขนาดทางกายภาพเปลี่ยน ต้องทำครบทั้ง 4 ขั้น:
+เมื่อขนาดทางกายภาพเปลี่ยน ต้องทำครบทั้ง 3 ขั้นนี้ — ไม่ต้องรอ Fusion:
 
-1. แก้ parameter ใน Fusion (ไม่ใช่แก้ sketch ตรง ๆ)
-2. Export `parameters.csv` ทับของเดิม แล้ว commit
-3. รัน `tools/generate_sim_meshes.py` เพื่อ regenerate `cad/exports/meshes/`
+1. แก้ `cad/parameters/parameters.csv` โดยตรง แล้ว commit — มันคือต้นทางของ
+   geometry (ดู [Pipeline](#pipeline) ด้านบน) **ไม่ใช่ export จาก Fusion**
+2. รัน `tools/generate_sim_meshes.py` เพื่อ regenerate `cad/exports/meshes/`
    และ `cad/urdf/meshes/` — **ไม่ใช่ export mesh มือจาก Fusion**
-   ส่วน STEP/STL งานผลิตยัง export จาก Fusion ตามปกติเมื่อจำเป็น
-4. Regenerate URDF → base USD (Isaac importer)
+3. Regenerate URDF → base USD (Isaac importer)
 
 แล้วรัน:
 
@@ -120,6 +119,15 @@ pytest tests/unit/test_cad_config_sync.py
 
 **อย่าแก้ค่าใน `config/rover.yaml` เพื่อให้ test ผ่าน** ถ้าต้นเหตุคือ CAD เปลี่ยน —
 ต้องตามให้ค่าใน config สะท้อนของจริง
+
+### งานมือใน Fusion — แยกต่างหาก ไม่บล็อกงาน sim
+
+STEP/STL งานผลิตยังตามหลัง Fusion เหมือนเดิม แต่เป็นคนละ track จาก 3 ขั้นข้างบน
+และตามทีหลังได้เสมอโดยไม่บล็อกใคร (design §9.1) — sim ไม่ต้องรอ assembly ที่ยังไม่เสร็จ:
+
+1. เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
+   (อย่าแก้ sketch ตรง ๆ)
+2. Export `cad/exports/step/` และ `cad/exports/stl/` ใหม่เฉพาะชิ้นที่กระทบ
 
 ---
 
