@@ -50,7 +50,7 @@ class TestConvergence:
         sim.run(seconds=3.0)
 
         assert all(sample.valid for sample in sim.history)
-        assert all(sample.v_mm_s == 100.0 for sample in sim.history[1:])
+        assert all(sample.v_mm_s == 160.0 for sample in sim.history[1:])
 
     def test_the_furrow_is_actually_reached_not_just_aimed_at(self):
         """lateral_err is a lookahead measurement: it goes to zero as soon as

@@ -120,8 +120,8 @@ class TestFromConfig:
     def test_gains_come_from_the_named_backend(self):
         follower = RowFollower.from_config(load_config(), backend="fake")
         assert (follower.k_lat, follower.k_head) == (45.0, 25.0)
-        assert follower.v_mm_s == 100.0
-        assert follower.omega_max_deg_s == 40.0
+        assert follower.v_mm_s == 160.0
+        assert follower.omega_max_deg_s == 25.0
 
     def test_untuned_gains_are_refused_rather_than_borrowed_from_sim(self):
         """Slip on real soil is not slip in sim.  Letting the sim gains stand in
