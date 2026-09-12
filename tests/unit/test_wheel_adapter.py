@@ -143,10 +143,11 @@ def test_no_vector_exceeds_the_velocity_limit_the_urdf_declares(v, omega, _left,
     """A joint target above the URDF limit is refused by Isaac silently, and the
     omega achieved stops matching the omega commanded.
 
-    The allowance is the URDF's own rounding: 327 / 125 is 2.616 exactly and the
-    file may round it, so a fully saturated command may sit a small amount above
-    the declared limit - the rounding allowance of 0.5e-4 rad/s covers any
-    floating-point representation differences.
+    Once the URDF is regenerated in a later task, it will declare 2.616 rad/s
+    (327 mm/s / 125 mm, the new wheel velocity limit). The adapter is checked
+    against that future value. The rounding allowance of 0.5e-4 rad/s accounts
+    for the truncation of 2.616 to four decimals (2.6160) and any floating-point
+    representation differences in the conversion.
     """
     rounding = 0.5e-4
     sides = adapter().wheel_velocities(v, omega)
