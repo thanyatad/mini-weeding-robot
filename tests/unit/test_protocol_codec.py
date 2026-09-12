@@ -125,7 +125,8 @@ def test_a_thousand_drive_frames_leave_the_pending_table_empty(codec):
     """The trap this module exists to avoid: at 10 Hz this is 100 seconds of
     driving, and nothing about it is pending on anything."""
     for seq in range(1, 1001):
-        codec.drive(seq=seq, v_mm_s=100.0, omega_deg_s=0.0)
+        line = codec.drive(seq=seq, v_mm_s=100.0, omega_deg_s=0.0)
+        assert decode(line)["seq"] == seq
 
     assert codec.pending == ()
     assert codec.tick(now_ms=10_000_000.0) == []
