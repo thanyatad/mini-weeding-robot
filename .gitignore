@@ -18,8 +18,13 @@ venv/
 sim/isaac/**/output/
 *.log
 
-# Generated from URDF by scripts/import_urdf.sh — never edit or commit
+# Generated from URDF by scripts/import_urdf.sh — never edit or commit.
+# The importer writes the payload layers and textures beside the .usd file and
+# rover_base.usd references them as ./payloads/..., so the whole set is one
+# generated artifact.  rover.usd, which layers over it, IS committed.
 sim/isaac/robots/rover/rover_base.usd
+sim/isaac/robots/rover/payloads/
+sim/isaac/robots/rover/Textures/
 
 # Fusion 360 local backups / lock files
 cad/fusion/*.f3d.lock
