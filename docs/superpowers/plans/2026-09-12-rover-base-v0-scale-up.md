@@ -358,6 +358,11 @@ Replace `cad/parameters/parameters.csv` entirely:
 # chassis_plate_width ถูกบังคับให้ <= 340 เพราะโครงอยู่ในช่วง z 125-250 ซึ่งเป็น
 # ที่ที่ล้ออยู่ ตัวถังเหนือ z 250 ยื่นได้ถึง 380 mm
 #
+# ⚠️ 340 คือ "ค่าสูงสุด" ไม่ใช่ค่าที่มี clearance — ที่ 340 โครงแตะหน้าในล้อพอดี
+#    (+/-170 ทั้งคู่) ไม่เหลือช่องให้ค่าความคลาดเคลื่อน +/-2 mm ที่ source spec
+#    section 16 ยอมให้ ตอนขึ้นรูปจริงใน Fusion ควรใช้ 320 เพื่อให้เหลือข้างละ 10 mm
+#    ค่า 340 ที่นี่เป็นค่า "ขอบเขต" ที่ test บังคับ ไม่ใช่ค่าที่แนะนำให้ตัดเหล็ก
+#
 # wheel_v_max_mm_s ใน config ไม่ได้เท่ากับพารามิเตอร์ตัวใดตัวหนึ่งที่นี่ แต่เป็นสูตร:
 #   (motor_rpm / 60) x pi x wheel_diameter_mm = (25/60) x pi x 250 = 327.2 -> 327
 # motor_rpm มาจาก hardware/bom/poc-v3.md ไม่ใช่จาก CAD
@@ -820,14 +825,17 @@ The existing `.obj` files were exported by hand from Fusion. Fusion is a manual 
 **Files:**
 - Create: `tools/generate_sim_meshes.py`
 - Create: `tests/unit/test_generate_sim_meshes.py`
-- Overwrite (generated): `cad/urdf/meshes/base_link.obj`, `cad/urdf/meshes/wheel.obj`, `cad/exports/meshes/base_link.obj`, `cad/exports/meshes/wheel.obj`
+- Overwrite (generated): `cad/urdf/meshes/{base_link,wheel}.obj`, `cad/exports/meshes/{base_link,wheel}.obj`, `cad/exports/meshes/{base_link,wheel}.stl`
 
 **Interfaces:**
 - Consumes: `cad/parameters/parameters.csv` (Task 2), mass figures from `hardware/bom/poc-v3.md` §มวล (Task 1)
 - Produces:
-  - `generate_sim_meshes.main(repo_root: Path) -> None` — writes the four `.obj` files
+  - `generate_sim_meshes.Mesh` — frozen dataclass, `vertices: list[tuple[float, float, float]]` in metres and `faces: list[tuple[int, ...]]` as 0-based indices, with `merge(other) -> Mesh`
+  - `generate_sim_meshes.main(repo_root: Path, out_dirs: list[Path] | None = None, stl_dirs: list[Path] | None = None) -> None` — writes `.obj` into every `out_dirs` entry and `.stl` into every `stl_dirs` entry
   - `generate_sim_meshes.mass_properties() -> dict[str, LinkInertia]` keyed `"base_link"`, `"wheel"`, where `LinkInertia` is a frozen dataclass with fields `mass: float`, `com: tuple[float, float, float]`, `ixx iyy izz ixy ixz iyz: float`, all in kg and metres
   - CLI: `python tools/generate_sim_meshes.py --print-inertia` prints a URDF-ready `<inertial>` block per link
+
+`.stl` goes only to `cad/exports/meshes/` — the URDF references `.obj`, so `cad/urdf/meshes/` carries nothing it does not use. `cad/exports/stl/` is **not** written here: that directory is manufacturing geometry and stays Fusion's (Task 10 clears the stale contents).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -861,7 +869,7 @@ def cad() -> dict[str, float]:
 
 
 def test_the_wheel_mesh_is_the_cad_wheel(tmp_path, cad):
-    gen.main(REPO, out_dirs=[tmp_path])
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
     vertices = gen.read_obj_vertices(tmp_path / "wheel.obj")
 
     radius = max(math.hypot(x, z) for x, _, z in vertices)
@@ -872,7 +880,7 @@ def test_the_wheel_mesh_is_the_cad_wheel(tmp_path, cad):
 
 
 def test_the_body_mesh_spans_belly_to_mast_head(tmp_path, cad):
-    gen.main(REPO, out_dirs=[tmp_path])
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
     vertices = gen.read_obj_vertices(tmp_path / "base_link.obj")
 
     lowest = min(z for _, _, z in vertices)
@@ -889,7 +897,7 @@ def test_nothing_in_the_body_mesh_hangs_below_the_axle(tmp_path, cad):
     """chassis_clearance equals the wheel radius, so the belly is the axle
     plane.  Anything below it is a part that would drag — this is the layout
     rule hardware/bom/poc-v3.md states, made checkable."""
-    gen.main(REPO, out_dirs=[tmp_path])
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
     vertices = gen.read_obj_vertices(tmp_path / "base_link.obj")
     axle_z = cad["wheel_diameter_mm"] / 2 / MM_PER_M
     assert min(z for _, _, z in vertices) >= axle_z - 1e-9
@@ -897,7 +905,7 @@ def test_nothing_in_the_body_mesh_hangs_below_the_axle(tmp_path, cad):
 
 def test_the_frame_never_reaches_the_wheels(tmp_path, cad):
     """Below the wheel tops the body must stay inside the wheel inner faces."""
-    gen.main(REPO, out_dirs=[tmp_path])
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
     vertices = gen.read_obj_vertices(tmp_path / "base_link.obj")
     wheel_top = cad["wheel_diameter_mm"] / MM_PER_M
     inner_face = (cad["track_width_mm"] - cad["wheel_width_mm"]) / 2 / MM_PER_M
@@ -906,6 +914,30 @@ def test_the_frame_never_reaches_the_wheels(tmp_path, cad):
         (abs(y) for _, y, z in vertices if z < wheel_top - 1e-9), default=0.0
     )
     assert widest_in_wheel_zone <= inner_face + 1e-9
+
+
+def test_the_stl_and_the_obj_describe_the_same_solid(tmp_path, cad):
+    """Both are written from one Mesh, so they cannot disagree.
+
+    The pair that used to live in cad/exports/meshes/ was exported by hand
+    twice, which is exactly how one of them goes stale without anyone noticing.
+    """
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
+    obj = gen.read_obj_vertices(tmp_path / "base_link.obj")
+    stl = [
+        tuple(float(value) for value in line.split()[1:4])
+        for line in (tmp_path / "base_link.stl").read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith("vertex ")
+    ]
+
+    assert stl, "the STL has no vertices"
+    for axis in range(3):
+        assert min(p[axis] for p in stl) == pytest.approx(
+            min(p[axis] for p in obj), abs=1e-9
+        )
+        assert max(p[axis] for p in stl) == pytest.approx(
+            max(p[axis] for p in obj), abs=1e-9
+        )
 
 
 def test_total_mass_matches_the_bom():
@@ -1006,6 +1038,26 @@ class Box:
 
     size: tuple[float, float, float]
     centre: tuple[float, float, float]
+
+
+@dataclass(frozen=True)
+class Mesh:
+    """Vertices in metres, faces as 0-based index tuples.
+
+    Faces may have more than three sides; OBJ takes them as they are and STL
+    triangulates on the way out.  Keeping one representation means the two
+    formats can never describe different geometry.
+    """
+
+    vertices: list[tuple[float, float, float]]
+    faces: list[tuple[int, ...]]
+
+    def merge(self, other: Mesh) -> Mesh:
+        offset = len(self.vertices)
+        return Mesh(
+            self.vertices + other.vertices,
+            self.faces + [tuple(index + offset for index in face) for face in other.faces],
+        )
 
 
 def read_parameters(path: Path) -> dict[str, float]:
@@ -1145,99 +1197,139 @@ def mass_properties(cad: dict[str, float] | None = None) -> dict[str, LinkInerti
     }
 
 
-# -- OBJ writing ------------------------------------------------------------
+# -- mesh building ----------------------------------------------------------
 
 
-def _box_obj(box: Box, offset: int) -> tuple[list[str], list[str]]:
+def box_mesh(box: Box) -> Mesh:
     (a, b, c), (cx, cy, cz) = box.size, box.centre
-    corners = [
+    vertices = [
         (cx + sx * a / 2, cy + sy * b / 2, cz + sz * c / 2)
         for sx in (-1, 1)
         for sy in (-1, 1)
         for sz in (-1, 1)
     ]
-    vertices = [f"v {x:.6f} {y:.6f} {z:.6f}" for x, y, z in corners]
-    quads = [
+    faces = [
         (0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1),
         (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3),
     ]
-    faces = [
-        "f " + " ".join(str(offset + index + 1) for index in quad) for quad in quads
-    ]
-    return vertices, faces
+    return Mesh(vertices, faces)
 
 
-def _cylinder_obj(
-    radius: float, length: float, axis: str, centre: tuple[float, float, float], offset: int
-) -> tuple[list[str], list[str]]:
+def cylinder_mesh(
+    radius: float, length: float, axis: str, centre: tuple[float, float, float]
+) -> Mesh:
     """A closed cylinder tessellated into WHEEL_SEGMENTS, about `axis`."""
     half = length / 2
-    rings: list[tuple[float, float, float]] = []
+    vertices: list[tuple[float, float, float]] = []
     for end in (-half, half):
         for segment in range(WHEEL_SEGMENTS):
             angle = 2 * math.pi * segment / WHEEL_SEGMENTS
             u, v = radius * math.cos(angle), radius * math.sin(angle)
-            if axis == "y":
-                point = (u, end, v)
-            else:
-                point = (u, v, end)
-            rings.append(tuple(point[i] + centre[i] for i in range(3)))
+            point = (u, end, v) if axis == "y" else (u, v, end)
+            vertices.append(tuple(point[i] + centre[i] for i in range(3)))
 
-    vertices = [f"v {x:.6f} {y:.6f} {z:.6f}" for x, y, z in rings]
-    faces = []
+    faces: list[tuple[int, ...]] = []
     for segment in range(WHEEL_SEGMENTS):
         nxt = (segment + 1) % WHEEL_SEGMENTS
-        a = offset + segment + 1
-        b = offset + nxt + 1
-        c = offset + WHEEL_SEGMENTS + nxt + 1
-        d = offset + WHEEL_SEGMENTS + segment + 1
-        faces.append(f"f {a} {b} {c} {d}")
-    for base in (offset + 1, offset + WHEEL_SEGMENTS + 1):
-        faces.append("f " + " ".join(str(base + s) for s in range(WHEEL_SEGMENTS)))
-    return vertices, faces
+        faces.append((segment, nxt, WHEEL_SEGMENTS + nxt, WHEEL_SEGMENTS + segment))
+    faces.append(tuple(range(WHEEL_SEGMENTS - 1, -1, -1)))
+    faces.append(tuple(range(WHEEL_SEGMENTS, 2 * WHEEL_SEGMENTS)))
+    return Mesh(vertices, faces)
 
 
-def _write_obj(path: Path, name: str, blocks: list[tuple[list[str], list[str]]]) -> None:
-    lines = [
-        f"# {name} - generated by tools/generate_sim_meshes.py from",
-        "# cad/parameters/parameters.csv.  Do not edit by hand: run the script.",
-        "# units: metres (URDF reads this mesh with no scale factor)",
-        f"o {name}",
-    ]
-    for vertices, _ in blocks:
-        lines.extend(vertices)
-    for _, faces in blocks:
-        lines.extend(faces)
+def build_meshes(cad: dict[str, float]) -> dict[str, Mesh]:
+    base = Mesh([], [])
+    for box in body_boxes(cad):
+        base = base.merge(box_mesh(box))
+
+    radius, height, centre_z = mast_dimensions(cad)
+    base = base.merge(cylinder_mesh(radius, height, "z", (0.0, 0.0, centre_z)))
+
+    wheel = cylinder_mesh(
+        cad["wheel_diameter_mm"] / 2 / MM_PER_M,
+        cad["wheel_width_mm"] / MM_PER_M,
+        "y",
+        (0.0, 0.0, 0.0),
+    )
+    return {"base_link": base, "wheel": wheel}
+
+
+# -- writing ----------------------------------------------------------------
+
+_BANNER = (
+    "generated by tools/generate_sim_meshes.py from cad/parameters/parameters.csv. "
+    "Do not edit by hand: run the script. Units are metres."
+)
+
+
+def write_obj(path: Path, name: str, mesh: Mesh) -> None:
+    lines = [f"# {name} - {_BANNER}", f"o {name}"]
+    lines += [f"v {x:.6f} {y:.6f} {z:.6f}" for x, y, z in mesh.vertices]
+    lines += ["f " + " ".join(str(index + 1) for index in face) for face in mesh.faces]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def main(repo_root: Path, out_dirs: list[Path] | None = None) -> None:
+def _normal(
+    a: tuple[float, float, float],
+    b: tuple[float, float, float],
+    c: tuple[float, float, float],
+) -> tuple[float, float, float]:
+    ux, uy, uz = (b[i] - a[i] for i in range(3))
+    vx, vy, vz = (c[i] - a[i] for i in range(3))
+    nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+    length = math.sqrt(nx * nx + ny * ny + nz * nz)
+    return (0.0, 0.0, 0.0) if length == 0.0 else (nx / length, ny / length, nz / length)
+
+
+def write_stl(path: Path, name: str, mesh: Mesh) -> None:
+    """ASCII STL, fan-triangulated from the same Mesh the OBJ is written from.
+
+    ASCII rather than binary on purpose: this geometry is a handful of boxes and
+    two cylinders, so the file is small, and a text file is one a reviewer can
+    open.  The Fusion exports under exports/stl/ are a different matter and stay
+    binary and LFS-tracked.
+    """
+    lines = [f"solid {name}"]
+    for face in mesh.faces:
+        for corner in range(1, len(face) - 1):
+            triangle = (
+                mesh.vertices[face[0]],
+                mesh.vertices[face[corner]],
+                mesh.vertices[face[corner + 1]],
+            )
+            nx, ny, nz = _normal(*triangle)
+            lines.append(f"  facet normal {nx:.6f} {ny:.6f} {nz:.6f}")
+            lines.append("    outer loop")
+            lines += [f"      vertex {x:.6f} {y:.6f} {z:.6f}" for x, y, z in triangle]
+            lines.append("    endloop")
+            lines.append("  endfacet")
+    lines.append(f"endsolid {name}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main(
+    repo_root: Path,
+    out_dirs: list[Path] | None = None,
+    stl_dirs: list[Path] | None = None,
+) -> None:
     cad = read_parameters(repo_root / "cad" / "parameters" / "parameters.csv")
+    exports = repo_root / "cad" / "exports" / "meshes"
     if out_dirs is None:
-        out_dirs = [
-            repo_root / "cad" / "urdf" / "meshes",
-            repo_root / "cad" / "exports" / "meshes",
-        ]
+        out_dirs = [repo_root / "cad" / "urdf" / "meshes", exports]
+    if stl_dirs is None:
+        # Only exports/meshes gets STL: the URDF references .obj, so urdf/meshes
+        # carries nothing it does not use.  exports/stl/ is manufacturing
+        # geometry and belongs to Fusion, not to this script.
+        stl_dirs = [exports]
 
-    blocks: list[tuple[list[str], list[str]]] = []
-    offset = 0
-    for box in body_boxes(cad):
-        vertices, faces = _box_obj(box, offset)
-        blocks.append((vertices, faces))
-        offset += len(vertices)
-
-    radius, height, centre_z = mast_dimensions(cad)
-    vertices, faces = _cylinder_obj(radius, height, "z", (0.0, 0.0, centre_z), offset)
-    blocks.append((vertices, faces))
-
-    wheel_radius = cad["wheel_diameter_mm"] / 2 / MM_PER_M
-    wheel_width = cad["wheel_width_mm"] / MM_PER_M
-    wheel_block = _cylinder_obj(wheel_radius, wheel_width, "y", (0.0, 0.0, 0.0), 0)
-
-    for directory in out_dirs:
-        _write_obj(directory / "base_link.obj", "base_link", blocks)
-        _write_obj(directory / "wheel.obj", "wheel", [wheel_block])
+    meshes = build_meshes(cad)
+    for name, mesh in meshes.items():
+        for directory in out_dirs:
+            write_obj(directory / f"{name}.obj", name, mesh)
+        for directory in stl_dirs:
+            write_stl(directory / f"{name}.stl", name, mesh)
 
 
 def _print_inertia() -> None:
@@ -1286,6 +1378,14 @@ python tools/generate_sim_meshes.py --print-inertia
 Keep the printed `<inertial>` blocks — Task 7 pastes them into the URDF verbatim.
 
 - [ ] **Step 6: Commit**
+
+The generated `.stl` files replace the hand-exported ones in `cad/exports/meshes/`, which described the Ø70 rover. Confirm both formats were written before committing:
+
+```bash
+ls -la cad/exports/meshes/ cad/urdf/meshes/
+```
+
+Expected: `base_link.obj`, `base_link.stl`, `wheel.obj`, `wheel.stl` in `exports/meshes/`; only the two `.obj` in `urdf/meshes/`. The `.stl` files should now be a few KB of ASCII, not the ~2 MB binary Fusion exports they replace.
 
 ```bash
 git add tools/ tests/unit/test_generate_sim_meshes.py cad/urdf/meshes/ cad/exports/meshes/
@@ -1785,15 +1885,123 @@ git commit -m "Tell the documentation which rover it is describing"
 
 ---
 
+### Task 10: retire the artifacts that describe the old rover
+
+Tasks 1–9 leave four committed binaries describing the Ø70 machine, and one of them is called `source of truth` in three different READMEs. No code reads any of them, which is precisely why they would sit there: nothing fails. The risk is not technical — `wheel_70x25.stl` is a file someone prints, and `weeding_rover.step` is a file someone sends to a shop.
+
+**Files:**
+- Delete: `cad/exports/step/weeding_rover.step`, `cad/exports/stl/chassis.stl`, `cad/exports/stl/weeding_rover_base.stl`, `cad/exports/stl/wheel_70x25.stl`
+- Modify: `cad/exports/README.md`, `cad/README.md`, `README.md`, `hardware/README.md`
+- Keep untouched: `cad/fusion/rover.f3d`
+
+**Interfaces:**
+- Consumes: everything above
+- Produces: no code interface
+
+- [ ] **Step 1: Confirm nothing reads them before deleting anything**
+
+```bash
+grep -rn "weeding_rover\.step\|wheel_70x25\|weeding_rover_base\.stl\|chassis\.stl" \
+  --include=*.py --include=*.urdf --include=*.cpp --include=*.h --include=*.yaml . \
+  | grep -v "^\./\.git"
+```
+
+Expected: **no output.** If anything appears, stop — that reference has to be resolved first, and this task's assumption is wrong.
+
+- [ ] **Step 2: Delete the superseded manufacturing exports**
+
+These are *outputs* of a Fusion assembly for a machine that no longer exists. Git LFS keeps every version, so this is recoverable — `git show HEAD~1:cad/exports/step/weeding_rover.step > recovered.step` brings one back.
+
+```bash
+git rm cad/exports/step/weeding_rover.step
+git rm cad/exports/stl/chassis.stl cad/exports/stl/weeding_rover_base.stl cad/exports/stl/wheel_70x25.stl
+ls -a cad/exports/step/ cad/exports/stl/
+```
+
+Expected: both directories contain only `.gitkeep`.
+
+- [ ] **Step 3: Keep rover.f3d, and say what it is**
+
+`cad/fusion/rover.f3d` is **not** deleted. It is the parametric assembly a mechanical engineer opens and edits — changing the user parameters from Ø70 to Ø250 is the entire point of having built it parametrically, and source spec §14 says so outright. Deleting it means starting the assembly from nothing.
+
+But it currently describes the old machine while three READMEs call it the source of truth. Add this banner at the top of `cad/README.md`, immediately under the title:
+
+```markdown
+> ### ⚠️ `cad/fusion/rover.f3d` ยังเป็นรถคันเก่า (ล้อ Ø70)
+>
+> `parameters.csv` ถูกอัปเดตเป็น Rover Base V0 (650 × 520, ล้อ Ø250) แล้ว
+> แต่ **Fusion assembly ยังไม่ถูกแก้** — เป็นงานมือที่ยังไม่มีใครทำ
+>
+> ```text
+> parameters.csv · urdf/ · exports/meshes/   ✓ V0 650 × 520
+> fusion/rover.f3d · exports/step/ · exports/stl/   ✗ ยังไม่มี V0
+> ```
+>
+> วิธีทำต่อ: เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
+> (อย่าแก้ sketch ตรง ๆ) แล้ว export `step/` + `stl/` ใหม่
+>
+> `exports/meshes/` **ไม่ต้อง** export จาก Fusion อีกต่อไป —
+> `tools/generate_sim_meshes.py` สร้างจาก `parameters.csv` ให้แล้ว
+```
+
+- [ ] **Step 4: Split generated from manual in cad/exports/README.md**
+
+The file currently opens with `ต้นฉบับคือ cad/fusion/rover.f3d เสมอ อย่าแก้ไฟล์ในโฟลเดอร์นี้โดยตรง`, which is now true of two of the three subdirectories and false of the third. Replace that opening with:
+
+```markdown
+โฟลเดอร์นี้มีสองแหล่งที่มา และกฎคนละข้อ
+
+| | ต้นฉบับ | แก้ยังไง |
+|---|---|---|
+| `meshes/` | `cad/parameters/parameters.csv` | รัน `python tools/generate_sim_meshes.py` — **ห้ามแก้ไฟล์ด้วยมือ** |
+| `step/` · `stl/` | `cad/fusion/rover.f3d` | แก้ user parameter ใน Fusion แล้ว export ใหม่ |
+
+`meshes/` เป็น simplified visual + collision สำหรับ simulator เท่านั้น
+`step/` และ `stl/` เป็น geometry สำหรับผลิต — ยังว่างอยู่จนกว่า Fusion assembly
+จะถูกแก้เป็น V0 ดู [../README.md](../README.md)
+```
+
+- [ ] **Step 5: Fix the three places that call rover.f3d the source of truth**
+
+| File | Line | Change |
+|---|---|---|
+| `README.md` | ~195 | the pipeline diagram: `parameters.csv` is the source of geometry; `rover.f3d` produces `step/` + `stl/` only |
+| `hardware/README.md` | ~51 | same correction |
+| `cad/urdf/weeding_rover.urdf` | 3 | header says `generated from cad/fusion/rover.f3d` — it is now generated from `parameters.csv` via `tools/generate_sim_meshes.py`. Task 7 already rewrites this header; confirm it says the new thing. |
+
+- [ ] **Step 6: Verify**
+
+```bash
+pytest tests/unit -v
+git lfs ls-files
+```
+
+Expected: all tests PASS. `git lfs ls-files` should list `cad/fusion/rover.f3d` and the four generated mesh files, and **no** `wheel_70x25.stl`, `weeding_rover_base.stl`, `chassis.stl` or `weeding_rover.step`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A
+git commit -m "Delete the parts list for a rover that no longer exists"
+```
+
+---
+
 ## Self-Review
 
-**Spec coverage.** Every design section maps to a task: §3 contradictions → Task 2 tests · §4 parameters → Task 2 · §5 bed → Task 3 · §6 drive and perception → Tasks 3, 4 · §7 invariants → Task 3 · §8 BOM → Task 1 · §9.1 mesh generator → Task 6 · §9.2 URDF → Task 7 · §10 file list → all · §11 verification → each task's own pytest command · §12 risks → carried into config comments (Tasks 3, 4), `config.yaml` (Task 8) and docs (Task 9) · §13 P0–P7 → Tasks 1–9 · §14 out of scope → nothing here touches tool, Fusion, STEP/STL, part numbers or Jetson.
+**Spec coverage.** Every design section maps to a task: §3 contradictions → Task 2 tests · §4 parameters → Task 2 · §5 bed → Task 3 · §6 drive and perception → Tasks 3, 4 · §7 invariants → Task 3 · §8 BOM → Task 1 · §9.1 mesh generator → Task 6 · §9.2 URDF → Task 7 · §10 file list → all · §11 verification → each task's own pytest command · §12 risks → carried into config comments (Tasks 3, 4), `config.yaml` (Task 8) and docs (Task 9) · §13 P0–P7 → Tasks 1–9 · §14 out of scope → no task authors a tool, a Fusion assembly, manufacturing STEP/STL, a part number or a Jetson migration.
+
+**Gap found after the first draft, and closed by Task 10.** The plan overwrote the four `.obj` files and left five committed binaries describing the Ø70 machine: `rover.f3d`, `weeding_rover.step`, three `.stl` under `exports/stl/`, and the two hand-exported `.stl` in `exports/meshes/`. No code reads any of them, which is exactly why nothing would have failed. Task 6 now generates the `exports/meshes` `.stl` pair from the same `Mesh` as the `.obj`, and Task 10 deletes the manufacturing exports while **keeping** `rover.f3d` — it is the parametric assembly someone edits from Ø70 to Ø250, and spec §14 makes that the point of having built it parametrically. Three READMEs that call `rover.f3d` the source of truth are corrected there too.
 
 **Deviation from the spec, recorded deliberately:** spec §6.3 computed the down camera's along-track coverage as 527 mm assuming a 4:3 sensor. `config/simulation.yaml` specifies the down camera as 1280 × 720, which is 16:9, giving **396 mm**. Task 9 Step 1 uses the corrected figure. It changes no decision — 396 mm is still ~5× the 80 mm travelled per frame.
 
 **Spec §12 risk 6** (35 kg is not a one-person lift) appears only in documentation, which is correct: it has no executable consequence.
 
 **One error caught during self-review and fixed inline:** the front camera's roll was first written as `-2.2689280276`, derived by pattern-matching the old URDF's `-2.3561944902`. Running it through the test's own `_optical_axis` helper showed it encodes **40°**, not 50°. The correct relation is `roll = -(90 + tilt)`, and `-(180 - tilt)` — the shape the old value also fits — agrees with it at exactly 45°, the angle the old file used. Task 7 Step 4 now states the trap and asserts the exact expected output.
+
+**The Task 6 generator was smoke-tested before the plan was committed**, against a parameters file holding the Task 2 values. Every assertion in `test_generate_sim_meshes.py` was run and passes: wheel radius 0.125 / half-width 0.045, base_link spanning z 0.125 → 0.905, total mass exactly 35.000 kg, CoM at (0, 0, 0.2219), `wheel.iyy == 0.5mr²`, and the STL bounding box matching the OBJ over 148 triangles. Generated STL comes out at 31 KB and 26 KB, against the 1.8 MB and 275 KB binaries they replace.
+
+That run also surfaced one thing worth knowing before anyone cuts metal: at `chassis_plate_width_mm 340` the frame edge sits at ±170.000 and the wheel inner faces at ±170.000 — **zero clearance**, passing the test only because the assertion is `≤`. The CSV comment in Task 2 now says 340 is the enforced bound and 320 is what to build to, which leaves 10 mm a side against the ±2 mm frame tolerance the source spec §16 allows.
 
 **Placeholders:** none. Every code step carries the code; every config step carries the file content; the one place a number is not written out (the URDF `<inertial>` blocks) is generated by a script written in the preceding task, with the exact command to produce it.
 
