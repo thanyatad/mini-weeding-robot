@@ -25,6 +25,11 @@
 > D4 (soil heightfield rigid ±15 mm) · D9 (CAD = geometry, config = operational) ·
 > D10 (URDF → base USD + override layer) · §8 Environment generator
 > + domain randomization
+>
+> ### หมายเหตุ
+>
+> `mini-smart-weeding-table-repository-architecture.md` ที่บรรทัด **Supersedes**
+> ด้านล่างอ้างถึง **ถูกลบออกจาก repo แล้ว** — อ่านได้จาก git history เท่านั้น
 
 # Design: Weeding Bed แทน Weeding Table
 

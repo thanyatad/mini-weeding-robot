@@ -379,4 +379,4 @@ M4 (เลี้ยวเข้าร่องถัดไป + cover ทั้�
 |---|---|
 | [docs/superpowers/specs/2026-09-12-rover-mvp-design.md](docs/superpowers/specs/2026-09-12-rover-mvp-design.md) | **Current** — rover 4 ล้อ, row following, MVP วิ่ง + มองเห็น |
 | [docs/superpowers/specs/2026-09-12-weeding-bed-design.md](docs/superpowers/specs/2026-09-12-weeding-bed-design.md) | Superseded — gantry คร่อมแปลง · **ส่วน tool ยังใช้ได้ที่ M3** |
-| [mini-smart-weeding-table-repository-architecture.md](mini-smart-weeding-table-repository-architecture.md) | Superseded — โต๊ะ + ถาด |
+| `mini-smart-weeding-table-repository-architecture.md` | ลบแล้ว — design โต๊ะ + ถาด อยู่ใน git history เท่านั้น |

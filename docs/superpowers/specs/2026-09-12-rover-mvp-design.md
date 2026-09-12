@@ -1082,8 +1082,14 @@ cad/parameters/parameters.csv  track_width · wheelbase · wheel_diameter
 
 เก็บเป็นประวัติ — ใส่หมายเหตุ superseded ที่หัวไฟล์ ไม่แก้เนื้อหา
   docs/superpowers/specs/2026-09-12-weeding-bed-design.md
-  mini-smart-weeding-table-repository-architecture.md
+
+ลบ
+  mini-smart-weeding-table-repository-architecture.md    (design โต๊ะ + ถาด)
 ```
+
+เอกสาร design โต๊ะ + ถาด **ถูกลบออกจาก working tree** ไม่ได้เก็บไว้เป็นไฟล์ —
+มันถูก superseded สองรอบแล้ว (โต๊ะ → แปลงดิน → rover) และไม่มีส่วนไหน
+ที่ milestone ข้างหน้าจะหยิบกลับมาใช้ เนื้อหายังอ่านได้จาก git history
 
 **เก็บ 2 ไฟล์ประวัติไว้ไม่ลบ** — ส่วน tool reach invariant, soil contact sensor,
 `tool_no_contact`/`tool_overreach` ใน spec แปลงดินยังถูกต้องทั้งชุดและ M3 จะหยิบกลับมาใช้
