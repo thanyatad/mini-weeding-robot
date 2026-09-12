@@ -131,11 +131,14 @@ def test_mm_to_m_at_the_adapter_edge():
 # -- [4] deg <-> rad at the urdf edge --------------------------------------
 
 
-def test_omega_max_40_deg_s_is_0_698_rad_s():
-    """The document's own worked example."""
+def test_omega_max_25_deg_s_is_0_436_rad_s():
+    """The document's own worked example, at the shipped omega_max: the URDF
+    joint limit and the mixing math both work in rad/s, so this is the one
+    place a reader can check the deg -> rad conversion against the config by
+    hand rather than trusting the code that does it."""
     omega_max_deg_s = get(load_config(), "rover.drive.omega_max_deg_s")
-    assert omega_max_deg_s == 40.0
-    assert math.radians(omega_max_deg_s) == pytest.approx(0.698, abs=0.001)
+    assert omega_max_deg_s == 25.0
+    assert math.radians(omega_max_deg_s) == pytest.approx(0.436, abs=0.001)
 
 
 def test_the_wheel_velocity_limit_is_the_config_limit_in_rad_s():

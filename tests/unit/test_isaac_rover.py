@@ -54,7 +54,7 @@ def test_a_rover_with_no_joints_says_so_rather_than_pretending():
 def test_from_config_wires_up_an_adapter_built_from_config():
     rover, _ = build()
     assert isinstance(rover.adapter, WheelAdapter)
-    assert rover.adapter.track_width_mm == 120.0
+    assert rover.adapter.track_width_mm == 430.0
 
 
 # -- driving ---------------------------------------------------------------
@@ -66,7 +66,7 @@ def test_driving_forward_sends_one_command_to_both_sides():
 
     assert len(joints.velocities) == 1
     left, right = joints.velocities[0]
-    assert left == pytest.approx(100.0 / 35.0)
+    assert left == pytest.approx(100.0 / 125.0)
     assert right == pytest.approx(left)
 
 
@@ -91,7 +91,7 @@ def test_saturation_is_the_adapters_and_reaches_the_wheels_scaled():
     rover, joints = build()
     rover.drive(320.0, 40.0)
     left, right = joints.velocities[0]
-    assert max(abs(left), abs(right)) == pytest.approx(202.0 / 35.0)
+    assert max(abs(left), abs(right)) == pytest.approx(327.0 / 125.0)
     assert left > 0.0
 
 
@@ -157,5 +157,5 @@ def test_wheel_velocities_are_readable_without_commanding_them():
     for the number must not move the rover."""
     rover, joints = build()
     sides = rover.wheel_velocities(100.0, 0.0)
-    assert sides.left_rad_s == pytest.approx(100.0 / 35.0)
+    assert sides.left_rad_s == pytest.approx(100.0 / 125.0)
     assert joints.velocities == []

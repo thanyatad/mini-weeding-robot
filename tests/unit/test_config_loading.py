@@ -42,16 +42,16 @@ def test_load_merges_all_top_level_sections():
 @pytest.mark.parametrize(
     "dotted, expected",
     [
-        ("rover.track_width_mm", 120),
-        ("rover.body_width_mm", 145),
-        ("rover.wheel_diameter_mm", 70),
-        ("rover.chassis_clearance_mm", 35),
-        ("rover.drive.v_max_mm_s", 100),
-        ("rover.drive.omega_max_deg_s", 40),
-        ("rover.drive.wheel_v_max_mm_s", 202),
+        ("rover.track_width_mm", 430),
+        ("rover.body_width_mm", 520),
+        ("rover.wheel_diameter_mm", 250),
+        ("rover.chassis_clearance_mm", 125),
+        ("rover.drive.v_max_mm_s", 160),
+        ("rover.drive.omega_max_deg_s", 25),
+        ("rover.drive.wheel_v_max_mm_s", 327),
         ("rover.drive.wheel_v_min_mm_s", 51),
         ("bed.soil_variation_mm", 15),
-        ("bed.row_spacing_mm", 350),
+        ("bed.row_spacing_mm", 750),
         ("bed.crop_foliage_half_width_mm", 30),
         ("safety.runaway_budget_mm", 60),
         ("safety.row_loss_frames", 3),
@@ -96,7 +96,7 @@ def test_with_overrides_does_not_mutate_the_original():
     base = cfg.load_config()
     patched = cfg.with_overrides(base, {"bed.row_spacing_mm": 250})
     assert cfg.get(patched, "bed.row_spacing_mm") == 250
-    assert cfg.get(base, "bed.row_spacing_mm") == 350
+    assert cfg.get(base, "bed.row_spacing_mm") == 750
 
 
 def test_with_overrides_rejects_an_unknown_key():
