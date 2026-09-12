@@ -26,43 +26,38 @@ wheel_drive:
   damping_n_m_s_per_deg: 0.005
 
   # max_force is NOT authored here on purpose.  It is the gearbox's continuous
-  # torque limit (5 kg·cm = 0.4903 N·m), it comes from the URDF's <limit
-  # effort=...>, and rover_base.usd already carries it.  Restating it here
-  # would put a BOM number in two places, which is exactly the drift the
-  # two-layer split exists to prevent.
+  # torque limit (10 N·m), it comes from the URDF's <limit effort=...>, and
+  # rover_base.usd already carries it.  Restating it here would put a BOM
+  # number in two places, which is exactly the drift the two-layer split
+  # exists to prevent.
 
 friction:
-  # ⚠️ THESE ARE NOT PHYSICAL VALUES AND NOT A TUNING RESULT.
+  # ⚠️ THESE VALUES ARE INHERITED FROM A 1.038 kg ROVER AND ARE NOT VALID.
   #
-  # Rubber on soil is roughly 0.6–0.9.  0.15 is here because it is the lowest
-  # setting at which the Stage 2 measurements are not actively misleading, and
-  # the honest reading of that is that the wheel/ground contact model is wrong,
-  # not that the coefficient is 0.15.  Measured on flat ground, 3 s per case:
+  # The table that used to be here measured a 1.038 kg rover on 0.035 m wheels
+  # with a 25 mm line contact.  This machine is 35 kg on 0.125 m wheels with a
+  # 90 mm contact and 3.6x the track.  Every row of that table is about a
+  # different vehicle, so it has been removed rather than left to be misread.
   #
-  #     mu     drive(100,0)   drive(0,40) yaw   wheel joints while spinning
-  #     0.90      98.2 mm/s        0.00 deg/s   stalled at 0.0 rad/s
-  #     0.50      98.1 mm/s        0.14 deg/s   erratic, wrong signs
-  #     0.15      96.9 mm/s        1.10 deg/s   tracks the target to 0.5%
-  #     0.02      82.9 mm/s        1.57 deg/s   tracks the target
+  # What the old table did establish, and what carries over as a QUESTION
+  # rather than an answer: straight-line driving was right at every friction
+  # setting, turning was not, and lowering friction by a factor of 45 moved the
+  # yaw from 1.10 to 1.57 deg/s against a commanded 40.  The conclusion was
+  # that friction is not the knob -- the contact model is -- and that the real
+  # lever is the wheel and running gear (V1-ISAAC.md#risks section 3).
   #
-  # Straight-line driving is right at every setting.  Turning is not: against a
-  # commanded 40 deg/s the rover yaws at a few percent of that, and lowering
-  # friction by a factor of 45 only moves it from 1.10 to 1.57 deg/s.  So
-  # friction is NOT the knob — the contact has reached a real equilibrium in
-  # which the longitudinal friction driving the yaw and the lateral friction
-  # resisting it very nearly cancel.  The drive is not the limit either: it
-  # produces 0.007 N·m of the 0.4903 N·m it is allowed while holding the
-  # commanded wheel speed exactly.
+  # This change pulls that lever for the first time: the contact is now 90 mm
+  # wide instead of 25, on a wheel 3.6x the radius, at 34x the mass.  Whether
+  # that fixes the yaw is the first thing Stage 3 must measure, BEFORE touching
+  # any number in this file.
   #
-  # Stage 3 owns this.  What it must NOT do is keep lowering this number: the
-  # levers that could actually work are the wheel contact model (a 25 mm line
-  # contact from the collision cylinder), anisotropic friction, or - as
-  # V1-ISAAC.md#risks §3 says outright - revisiting the wheel and running gear
-  # rather than the gains.
+  # Re-measure on flat ground, 3 s per case, and put the new table here:
+  #   drive(160, 0)  -> expect 160 mm/s
+  #   drive(0, 25)   -> expect 25 deg/s     <-- the one that was broken
+  #   drive(160, 25) -> expect the mixing table's 66.2 / 253.8 mm/s
   #
-  # The mass these were measured against (1.038 kg) is itself incomplete: the
-  # motor driver, bucks, E-stop, wiring and fasteners are unselected and the
-  # 185 g battery is an allowance, not a part.
+  # Do NOT keep lowering `static` to chase the yaw.  That was the trap last
+  # time and the file said so.
   static: 0.15
   dynamic: 0.12
   restitution: 0.0
@@ -76,9 +71,14 @@ friction:
   combine_mode: min
 
 collision:
-  # Isaac's default contact offset is 0.02 m, which is 57% of this wheel's
-  # 0.035 m radius — big enough that the wheel would generate contacts well
-  # before it touches.
+  # Isaac's default contact offset is 0.02 m -- 57% of the old 0.035 m wheel
+  # radius, 16% of the new 0.125 m one, and in both cases large enough to
+  # generate contacts well before the wheel touches.
+  #
+  # 0.004 is held at its absolute value, not at a fixed ratio: it was 11% of
+  # the old radius and is 3.2% of the new one.  It is the absolute offset,
+  # not the ratio, that keeps contacts tight, and 0.004 m is still
+  # comfortably small against a 0.125 m wheel.
   contact_offset_m: 0.004
   rest_offset_m: 0.0
 

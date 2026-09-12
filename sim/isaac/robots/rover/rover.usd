@@ -64,7 +64,7 @@ over "weeding_rover"
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # maxForce stays where the URDF put it (10 N.m, the gearbox's
         # continuous limit) - see config.yaml for why it is not restated here.
         over "wheel_fl"
         {
@@ -76,7 +76,7 @@ over "weeding_rover"
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # maxForce stays where the URDF put it (10 N.m, the gearbox's
         # continuous limit) - see config.yaml for why it is not restated here.
         over "wheel_fr"
         {
@@ -88,7 +88,7 @@ over "weeding_rover"
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # maxForce stays where the URDF put it (10 N.m, the gearbox's
         # continuous limit) - see config.yaml for why it is not restated here.
         over "wheel_rl"
         {
@@ -100,7 +100,7 @@ over "weeding_rover"
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # maxForce stays where the URDF put it (10 N.m, the gearbox's
         # continuous limit) - see config.yaml for why it is not restated here.
         over "wheel_rr"
         {
