@@ -104,14 +104,14 @@ class TestGeometryInvariants:
         assert "chassis_clearance" in message
 
     def test_5_clear_furrow_against_body_and_runaway(self):
-        """clear_furrow > body_width + 2 x runaway_budget      290 > 266
+        """clear_furrow > body_width + 2 x runaway_budget      290 > 265
 
         Regression: row_spacing was 250 while drafting, which is what this
         invariant caught."""
         message = message_for({"bed.row_spacing_mm": 250})
         assert "clear_furrow" in message
         assert "body_width" in message
-        assert "190" in message and "266" in message
+        assert "190" in message and "265" in message
 
     def test_5_uses_clear_furrow_and_not_row_spacing(self):
         """Leaves take 30 mm off each side.  An invariant written against
@@ -122,15 +122,15 @@ class TestGeometryInvariants:
         assert "230" in message
 
     def test_5_uses_the_width_over_the_wheels(self):
-        """body_width is the widest point of the rover, 146 mm, not the 140 mm
+        """body_width is the widest point of the rover, 145 mm, not the 140 mm
         chassis plate.  What hits the leaves is the wheels."""
         message = message_for({"bed.row_spacing_mm": 250})
-        assert "146" in message
+        assert "145" in message
 
 
 class TestDriveInvariants:
     def test_6_outer_wheel_against_the_motor_ceiling(self):
-        """v + omega_max_rad x track/2 <= wheel_v_max       141.9 <= 340"""
+        """v + omega_max_rad x track/2 <= wheel_v_max       141.9 <= 202"""
         message = message_for({"rover.drive.wheel_v_max_mm_s": 100})
         assert "wheel_v_max" in message
         assert "141.9" in message and "100" in message
@@ -221,7 +221,7 @@ class TestRegressionValues:
 
     def test_the_shipped_track_width_keeps_a_real_margin(self):
         margins = startup_checks.margins(load_config())
-        assert margins["clear_furrow"] == pytest.approx(24.0)
+        assert margins["clear_furrow"] == pytest.approx(25.0)
         assert margins["wheel_v_min"] == pytest.approx(7.11, abs=0.01)
 
 

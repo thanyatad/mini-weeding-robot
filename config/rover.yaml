@@ -8,15 +8,24 @@
 rover:
   track_width_mm: 120          # derived: cad track_width
   wheelbase_mm: 120            # derived: cad wheelbase
-  body_width_mm: 146           # derived: cad body_width  (รวมล้อ = track + wheel_width)
-  wheel_diameter_mm: 65        # derived: cad wheel_diameter
+  body_width_mm: 145           # derived: cad body_width  (รวมล้อ = track + wheel_width)
+  wheel_diameter_mm: 70        # derived: cad wheel_diameter
   chassis_clearance_mm: 35     # derived: cad chassis_clearance
 
   drive:
     v_max_mm_s: 100
     omega_max_deg_s: 40
-    wheel_v_max_mm_s: 340      # derived: cad wheel_diameter + มอเตอร์ 100 RPM
-    wheel_v_min_mm_s: 51       # deadband — ต้องวัดจริงที่ V3
+    wheel_v_max_mm_s: 202      # derived: cad wheel_diameter + มอเตอร์ 55 RPM
+    wheel_v_min_mm_s: 51       # deadband — ต้องวัดจริงที่ V3 ดูหมายเหตุท้ายไฟล์
+
+# `wheel_v_min_mm_s: 51` ถูกเก็บไว้เท่าเดิมโดยเจตนาแม้เปลี่ยนมอเตอร์แล้ว
+#
+# 51 เป็นค่าประมาณจาก 15% duty ของมอเตอร์ตัวเก่า (340 mm/s) โมเดลเดียวกันกับ
+# 20D 250:1 (202 mm/s) จะได้ 30 — แต่ลดลงมาไม่ได้อะไรเลยนอกจากความมั่นใจปลอม
+# เกียร์ 250:1 มีชั้นเฟืองมากกว่า stiction สูงกว่า deadband จริงจึงอาจสูงกว่า 15%
+# ไม่ใช่ต่ำกว่า เก็บค่าที่เข้มกว่าไว้จนกว่าจะวัดจริงที่ V3
+#
+# invariant ตัวล่างยังผ่านที่ 51: ล้อข้างในที่ omega_max = 58.1 >= 51  margin 7.1 mm/s
 
 bed:
   soil_variation_mm: 15

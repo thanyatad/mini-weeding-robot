@@ -161,7 +161,7 @@ def test_the_bom_still_states_the_motor_speed():
     """wheel_v_max is derived from a number that lives in the BOM, not in CAD.
     If the BOM row is reworded, the derivation below is quietly testing nothing.
     """
-    assert _motor_rpm() == 100.0
+    assert _motor_rpm() == 55.0
 
 
 def _motor_rpm() -> float:

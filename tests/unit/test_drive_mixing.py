@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[2]
 # against.  They are repeated here so a change to either one fails loudly
 # instead of silently invalidating every row.
 TRACK_WIDTH_MM = 120.0
-WHEEL_V_MAX_MM_S = 340.0
+WHEEL_V_MAX_MM_S = 202.0
 TOLERANCE_MM_S = 0.01
 
 VECTORS_CSV = CONFIG_DIR / "drive_mixing_vectors.csv"

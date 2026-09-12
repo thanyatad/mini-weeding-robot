@@ -20,7 +20,7 @@
  * that test fails instead of the firmware quietly mixing for the old chassis.
  */
 #define TRACK_WIDTH_MM 120.0f   /* config/rover.yaml rover.track_width_mm */
-#define WHEEL_V_MAX_MM_S 340.0f /* config/rover.yaml rover.drive.wheel_v_max_mm_s */
+#define WHEEL_V_MAX_MM_S 202.0f /* config/rover.yaml rover.drive.wheel_v_max_mm_s */
 
 /* Commanded surface speed of each side, mm/s.  Not measured — no encoders. */
 typedef struct {

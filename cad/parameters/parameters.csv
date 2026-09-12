@@ -10,11 +10,11 @@
 #
 # body_width_mm ไม่ใช่ความกว้างแชสซี — เป็นความกว้างรวมล้อ:
 #   body_width = max(chassis_plate_width, track_width + wheel_width)
-#              = max(140, 120 + 26) = 146
+#              = max(140, 120 + 25) = 145
 # ส่วนที่ชนใบพืชคือล้อ ไม่ใช่ตัวถัง ข้อนี้เป็นที่มาของการลด track_width 140 -> 120
 #
 # wheel_v_max_mm_s ใน config ไม่ได้เท่ากับพารามิเตอร์ตัวใดตัวหนึ่งที่นี่ แต่เป็นสูตร:
-#   (motor_rpm / 60) x pi x wheel_diameter_mm = (100/60) x pi x 65 = 340.3 -> 340
+#   (motor_rpm / 60) x pi x wheel_diameter_mm = (55/60) x pi x 70 = 201.6 -> 202
 # motor_rpm มาจาก hardware/bom/poc-v2.md ไม่ใช่จาก CAD
 #
 # ⚠️ camera_front_tilt_deg และ camera_front_height_mm กำหนด lookahead distance
@@ -27,13 +27,13 @@
 name,value,unit,comment
 body_length_mm,200,mm,ความยาวตัวถัง (ไม่รวมล้อ)
 chassis_plate_width_mm,140,mm,ความกว้างแผ่นแชสซี
-body_width_mm,146,mm,ความกว้างรวมล้อ = จุดกว้างสุดของรถ
+body_width_mm,145,mm,ความกว้างรวมล้อ = จุดกว้างสุดของรถ
 body_height_mm,70,mm,ความสูงตัวถัง (ไม่รวมเสากล้อง)
 chassis_clearance_mm,35,mm,จากพื้นถึงท้องรถ
 track_width_mm,120,mm,ระยะกึ่งกลางล้อซ้ายถึงกึ่งกลางล้อขวา
 wheelbase_mm,120,mm,ระยะกึ่งกลางเพลาหน้าถึงกึ่งกลางเพลาหลัง
-wheel_diameter_mm,65,mm,เส้นผ่านศูนย์กลางล้อรวมยาง
-wheel_width_mm,26,mm,ความกว้างหน้ายาง
+wheel_diameter_mm,70,mm,เส้นผ่านศูนย์กลางล้อรวมยาง
+wheel_width_mm,25,mm,ความกว้างหน้ายาง
 motor_mount_pitch_mm,18,mm,ระยะรูยึดมอเตอร์
 camera_front_height_mm,180,mm,ความสูงเหนือ soil reference
 camera_front_tilt_deg,45,deg,มุมก้มจากแนวนอน

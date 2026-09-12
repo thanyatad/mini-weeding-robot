@@ -108,7 +108,7 @@ class TestClearance:
         )
         expected = (clear_furrow - get(config, "rover.body_width_mm")) / 2
         assert sim.history[0].clearance_mm == pytest.approx(expected)
-        assert expected == pytest.approx(72.0)
+        assert expected == pytest.approx(72.5)
 
     def test_a_run_that_leaves_the_furrow_reports_negative_clearance(self):
         """The check has to be able to fail, or min_clearance_mm > 0 proves

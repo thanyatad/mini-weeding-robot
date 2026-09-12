@@ -25,14 +25,14 @@
 rover:
   track_width_mm: 120          # derived: cad track_width
   wheelbase_mm: 120            # derived: cad wheelbase
-  body_width_mm: 146           # derived: cad body_width  (รวมล้อ = track + wheel_width)
-  wheel_diameter_mm: 65        # derived: cad wheel_diameter
+  body_width_mm: 145           # derived: cad body_width  (รวมล้อ = track + wheel_width)
+  wheel_diameter_mm: 70        # derived: cad wheel_diameter
   chassis_clearance_mm: 35     # derived: cad chassis_clearance
 
   drive:
     v_max_mm_s: 100
     omega_max_deg_s: 40
-    wheel_v_max_mm_s: 340      # derived: cad wheel_diameter + มอเตอร์ 100 RPM
+    wheel_v_max_mm_s: 202      # derived: cad wheel_diameter + มอเตอร์ 55 RPM
     wheel_v_min_mm_s: 51       # deadband — ต้องวัดจริงที่ V3
 
 bed:
@@ -44,12 +44,18 @@ bed:
 ### `omega_max_deg_s` เป็น 40 ไม่ใช่ 60 — เพราะ deadband ของมอเตอร์ DC
 
 ```text
-ล้อ 65 mm → เส้นรอบวง 204 mm
-มอเตอร์ 12 V ~100 RPM → ความเร็วล้อสูงสุด 340 mm/s
-มอเตอร์เกียร์ DC ไม่ออกตัวใต้ ~15% duty ≈ 51 mm/s
+ล้อ 70 mm → เส้นรอบวง 220 mm
+มอเตอร์ 12 V ~55 RPM (Pololu 20D 250:1) → ความเร็วล้อสูงสุด 202 mm/s
+`wheel_v_min_mm_s` ใน config เก็บไว้ที่ 51 ซึ่งเข้มกว่า 15% duty ของมอเตอร์ตัวนี้ (30 mm/s)
 
-ที่ omega_max = 60:  differential = 62.8 mm/s → v_left = 37.2 mm/s  (11%)  ✗ deadband
-ที่ omega_max = 40:  differential = 41.9 mm/s → v_left = 58.1 mm/s  (17%)  ✓ เหนือ deadband
+ที่ omega_max = 60:  differential = 62.8 mm/s → v_left = 37.2 mm/s  ✗ ใต้ 51
+ที่ omega_max = 40:  differential = 41.9 mm/s → v_left = 58.1 mm/s  ✓ เหนือ 51
+
+⚠️ ข้อโต้แย้งนี้อ่อนลงเมื่อเปลี่ยนมาใช้มอเตอร์ที่ช้ากว่า — ที่ 202 mm/s ตัว
+omega_max = 60 ให้ 18% duty ซึ่ง**ผ่าน**โมเดล 15% แต่ยังตกเพราะ `wheel_v_min`
+ถูกเก็บไว้ที่ค่าเข้มกว่าจนกว่าจะวัดจริงที่ V3
+
+ถ้า V3 วัด deadband ได้ต่ำจริง `omega_max` ขยับขึ้นได้ **แต่ต้องวัดก่อน ไม่ใช่เดา**
 
 เพดานจริงของ `omega_max` คือ **46 deg/s** (ที่ 46.8 ค่า `v_left` จะแตะ 51 พอดี) —
 เลือก 40 เพื่อให้มี margin ไม่ใช่เพราะ 40 เป็นค่าสูงสุดที่ทำได้
@@ -321,10 +327,10 @@ logging:
 ```text
 safety      v_max × command_timeout/1000        <= runaway_budget        30 <= 60   ok
 safety      v_max × row_loss_frames/loop_hz     <= runaway_budget        30 <= 60   ok
-geometry    wheel_diameter        >= 4 × soil_variation                  65 >= 60   ok
+geometry    wheel_diameter        >= 4 × soil_variation                  70 >= 60   ok
 geometry    chassis_clearance     >  soil_variation                      35 >  15   ok
-geometry    clear_furrow          >  body_width + 2 × runaway_budget    290 > 266   ok
-drive       v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 340  ok
+geometry    clear_furrow          >  body_width + 2 × runaway_budget    290 > 265   ok
+drive       v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 202  ok
 drive       v − omega_max_rad × track/2  >= wheel_v_min                58.1 >=  51
 config      gains[backend] ไม่เป็น null
 consistency simulation.soil.variation_mm == bed.soil_variation_mm

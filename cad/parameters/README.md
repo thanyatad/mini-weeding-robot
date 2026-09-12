@@ -29,7 +29,7 @@ camera_front_tilt_deg
 |---|---|---|
 | `body_length_mm` | 200 | ความยาวตัวถัง (ไม่รวมล้อ) |
 | `chassis_plate_width_mm` | 140 | ความกว้างแผ่นแชสซี |
-| `body_width_mm` | **146** | **ความกว้างรวมล้อ = จุดกว้างสุดของรถ** ดูหมายเหตุ |
+| `body_width_mm` | **145** | **ความกว้างรวมล้อ = จุดกว้างสุดของรถ** ดูหมายเหตุ |
 | `body_height_mm` | 70 | ความสูงตัวถัง (ไม่รวมเสากล้อง) |
 | `chassis_clearance_mm` | 35 | จากพื้นถึงท้องรถ |
 
@@ -39,8 +39,8 @@ camera_front_tilt_deg
 |---|---|---|
 | `track_width_mm` | 120 | ระยะกึ่งกลางล้อซ้ายถึงกึ่งกลางล้อขวา |
 | `wheelbase_mm` | 120 | ระยะกึ่งกลางเพลาหน้าถึงกึ่งกลางเพลาหลัง |
-| `wheel_diameter_mm` | 65 | เส้นผ่านศูนย์กลางล้อรวมยาง |
-| `wheel_width_mm` | 26 | ความกว้างหน้ายาง |
+| `wheel_diameter_mm` | 70 | เส้นผ่านศูนย์กลางล้อรวมยาง — Pololu #3272 |
+| `wheel_width_mm` | 25 | ความกว้างหน้ายาง — Pololu #3272 |
 | `motor_mount_pitch_mm` | 18 | ระยะรูยึดมอเตอร์ |
 
 ไม่มี belt / pulley / stepper — ขับตรงจากมอเตอร์เกียร์ที่เพลาล้อ
@@ -49,8 +49,8 @@ camera_front_tilt_deg
 
 ```text
 body_width = max(chassis_plate_width, track_width + wheel_width)
-           = max(140, 120 + 26)
-           = 146 mm
+           = max(140, 120 + 25)
+           = 145 mm
 ```
 
 ล้อยื่นออกนอกแชสซีข้างละ 3 mm — **ส่วนที่ชนใบพืชคือล้อ ไม่ใช่ตัวถัง**
@@ -60,12 +60,17 @@ body_width = max(chassis_plate_width, track_width + wheel_width)
 ซึ่งน้อยเกินไปสำหรับค่าที่ยังไม่ได้วัดจริง (`crop_foliage_half_width`)
 
 ```text
-track 140 → overall 166 → clear_furrow 290 > 286   margin  4 mm   ✗ แคบเกิน
-track 120 → overall 146 → clear_furrow 290 > 266   margin 24 mm   ✓
+track 140 → overall 165 → clear_furrow 290 > 285   margin  5 mm   ✗ แคบเกิน
+track 120 → overall 145 → clear_furrow 290 > 265   margin 25 mm   ✓
 ```
 
 ลด track ดีกว่าขยาย `row_spacing` เพราะได้ margin ของ deadband เพิ่มด้วย
-(`v_left` ที่ `omega_max` ขยับจาก 51.1 เป็น 58.1 mm/s) และกล้องล่างยังใช้
+(`v_left` ที่ `omega_max` ขยับจาก 51.1 เป็น 58.1 mm/s)
+
+⚠️ `track_width 120` ยังกำหนด**ความยาวมอเตอร์**ด้วย: หน้าในของล้ออยู่ที่ ±47.5 mm
+มอเตอร์ซ้าย/ขวายื่นเข้าหากัน ยาวเกิน 47 mm ต่อตัวคือชนกลางลำ ตัดมอเตอร์ยอดนิยม
+อย่าง GA25-370 (~65 mm) และ JGB37 (~72 mm) ออกทั้งหมด ดู
+[../../hardware/bom/poc-v2.md](../../hardware/bom/poc-v2.md) และกล้องล่างยังใช้
 FOV 60° มาตรฐานได้ ไม่ต้องเปลี่ยนไปใช้เลนส์กว้าง
 
 ### Camera
@@ -83,7 +88,7 @@ FOV 60° มาตรฐานได้ ไม่ต้องเปลี่ย�
 เหตุผลเดียวกับกล้องของ design gantry ดู
 [../../docs/calibration.md](../../docs/calibration.md#soil-plane-error-budget)
 
-`camera_down_height_mm = 220` ทำให้เสากล้องสูงกว่าตัวถัง 150 mm บนรถกว้างรวมล้อ 146 mm —
+`camera_down_height_mm = 220` ทำให้เสากล้องสูงกว่าตัวถัง 150 mm บนรถกว้างรวมล้อ 145 mm —
 **ต้องวางแบตเตอรี่และมอเตอร์ให้ต่ำที่สุด** ไม่งั้นจุดศูนย์ถ่วงสูงและพลิกง่ายบนดินขรุขระ
 
 ---
@@ -157,24 +162,24 @@ image-space ล้วน ขอแค่เห็นแถวพืชสอง�
 
 ```text
 wheel_v_max = (motor_rpm / 60) × pi × wheel_diameter_mm
-            = (100 / 60) × 3.14159 × 65
-            = 1.6667 × 204.2
-            = 340.3 mm/s   →  config: wheel_v_max_mm_s: 340
+            = (55 / 60) × 3.14159 × 70
+            = 0.9167 × 219.9
+            = 201.6 mm/s   →  config: wheel_v_max_mm_s: 202
 ```
 
 ### Startup invariants ที่ค่าจาก CAD เข้าไปเกี่ยวข้อง
 
 ```text
-geometry  wheel_diameter        >= 4 × soil_variation                  65 >= 60   ok  margin 5 mm
+geometry  wheel_diameter        >= 4 × soil_variation                  70 >= 60   ok  margin 10 mm
 geometry  chassis_clearance     >  soil_variation                      35 >  15   ok
-geometry  clear_furrow          >  body_width + 2 × runaway_budget    290 > 266   ok  margin 24 mm
-drive     v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 340  ok
+geometry  clear_furrow          >  body_width + 2 × runaway_budget    290 > 265   ok  margin 25 mm
+drive     v + omega_max_rad × track/2  <= wheel_v_max               141.9 <= 202  ok
 drive     v − omega_max_rad × track/2  >= wheel_v_min                58.1 >=  51
 ```
 
-⚠️ **`wheel_diameter >= 4 × soil_variation` เหลือ margin แค่ 5 mm** —
-ถ้า `soil_variation_mm` ที่วัดจริงเกิน 16 mm ต้องเปลี่ยนล้อใหญ่ขึ้น
-ล้อ 65 mm บนก้อนดิน 15 mm คือการไต่สิ่งกีดขวางสูง 23% ของเส้นผ่านศูนย์กลาง
+⚠️ **`wheel_diameter >= 4 × soil_variation` เหลือ margin 10 mm** —
+ถ้า `soil_variation_mm` ที่วัดจริงเกิน 17.5 mm ต้องเปลี่ยนล้อใหญ่ขึ้น
+ล้อ 70 mm บนก้อนดิน 15 mm คือการไต่สิ่งกีดขวางสูง 21% ของเส้นผ่านศูนย์กลาง
 ซึ่งเป็นขอบของสิ่งที่ล้อไม่มีช่วงล่างทำได้
 
 ⚠️ **invariant `drive` ตัวล่างมี margin 7.1 mm/s** — `wheel_v_min_mm_s = 51`
