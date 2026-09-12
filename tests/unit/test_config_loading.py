@@ -57,6 +57,7 @@ def test_load_merges_all_top_level_sections():
         ("safety.row_loss_frames", 3),
         ("safety.command_timeout_ms", 300),
         ("safety.link_lost_ms", 500),
+        ("safety.ack_timeout_ms", 200),
         ("perception.loop_hz", 10),
         ("perception.exg.exg_floor", 12),
         ("row_follower.v_mm_s", 100),

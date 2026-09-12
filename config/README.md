@@ -76,6 +76,7 @@ safety:
   row_loss_frames: 3
   command_timeout_ms: 300
   link_lost_ms: 500
+  ack_timeout_ms: 200
   enable_estop: true
 ```
 
@@ -87,6 +88,16 @@ MVP ไม่มี bumper switch ค่านี้จึงเป็นตั�
 `link_lost_ms (500) > command_timeout_ms (300)` **โดยเจตนา** — ESP32 ต้องดับมอเตอร์
 ก่อนที่ Pi จะประกาศ error เพื่อให้ลำดับเหตุการณ์ใน log อ่านได้ว่าอะไรเกิดก่อน
 ถ้ากลับกัน Pi จะเข้า `ERROR` ขณะที่ล้อยังหมุนอยู่ 200 ms
+
+`ack_timeout_ms` คือ deadline ของ Rule 4 ใน [protocol/messages.md](../protocol/messages.md) —
+discrete command (`stop` · `emergency_stop` · `reset`) ที่ไม่ได้ `ack` ภายในเวลานี้
+→ `ERROR` code `communication_lost` พร้อม `id` ของ command นั้น
+
+**ไม่ใช้กับ `drive`** ซึ่งเป็น streaming — เฟรมที่ตกหนึ่งเฟรมต้องไม่กลายเป็น error
+
+เป็นคนละเรื่องกับอีกสองค่าและต้องแยกกัน: `command_timeout_ms` คือ deadline ที่ **ESP32**
+รอ `drive` ตัวถัดไป · `link_lost_ms` คือเพดานของ `link_age_ms` ฝั่ง **Pi**
+ทั้งสามเรียงกันเป็น 200 < 300 < 500 เพื่อให้ลำดับใน log อ่านได้ว่าอะไรเกิดก่อน
 
 ---
 

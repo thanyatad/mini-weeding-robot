@@ -5,10 +5,16 @@
 #
 # `link_lost_ms (500) > command_timeout_ms (300)` โดยเจตนา — ESP32 ต้องดับมอเตอร์
 # ก่อนที่ Pi จะประกาศ error ถ้ากลับกัน Pi จะเข้า ERROR ขณะที่ล้อยังหมุนอยู่ 200 ms
+#
+# `ack_timeout_ms (200)` คือ deadline ของ Rule 4 — discrete command ที่ไม่ได้ `ack`
+# ภายในเวลานี้ → `ERROR` **ไม่ใช้กับ `drive`** ซึ่งเป็น streaming
+# วางไว้ต่ำกว่าอีกสองค่าเพื่อให้ log อ่านเรียงเหตุ: command ที่ไม่ตอบ (200) →
+# ESP32 ดับมอเตอร์ (300) → Pi ประกาศ link_lost (500)
 
 safety:
   runaway_budget_mm: 60
   row_loss_frames: 3
   command_timeout_ms: 300
   link_lost_ms: 500
+  ack_timeout_ms: 200
   enable_estop: true
