@@ -48,19 +48,34 @@ point จำนวนมาก ทำให้ solver ช้าลงมาก�
 
 ## Export Checklist
 
-เมื่อขนาดใน Fusion เปลี่ยน:
+`parameters.csv` เป็นต้นทาง — ทุกอย่างตามหลังมัน ไม่ใช่ตามหลัง Fusion อีกต่อไป
+สองงานนี้แยกกัน ทำคนละเวลาก็ได้:
+
+เมื่อขนาดใน `cad/parameters/parameters.csv` เปลี่ยน (ทำก่อนเสมอ):
 
 ```text
-[ ] step/    export ชิ้นที่กระทบ
-[ ] stl/     export เฉพาะชิ้นที่ต้องพิมพ์ใหม่
-[ ] meshes/  export + simplify + ตรวจว่า origin ตรงกับที่ URDF คาด
-[ ] cad/parameters/parameters.csv
+[ ] แก้ cad/parameters/parameters.csv แล้ว commit
+[ ] python tools/generate_sim_meshes.py         — regenerate meshes/ (ห้าม export มือ)
 [ ] regenerate URDF → base USD
 [ ] pytest tests/unit/test_cad_config_sync.py
+[ ] pytest tests/unit/test_generate_sim_meshes.py
+[ ] pytest tests/unit/test_urdf_matches_cad.py
 ```
 
-**origin ของ mesh ต้องตรงกับ link frame ใน URDF** — เป็นความผิดพลาดที่พบบ่อยที่สุด
-ในขั้นนี้ และอาการคือชิ้นส่วนลอยหรือหมุนผิดจุดใน Isaac
+งานมือใน Fusion — แยกต่างหาก ตามทีหลังได้โดยไม่บล็อกใคร (เมื่อต้อง export
+`step/`/`stl/` ใหม่สำหรับผลิต):
+
+```text
+[ ] เปิด cad/fusion/rover.f3d แก้ user parameter ให้ตรงกับ parameters.csv
+[ ] step/    export ชิ้นที่กระทบ
+[ ] stl/     export เฉพาะชิ้นที่ต้องพิมพ์ใหม่
+```
+
+**origin ของ mesh ต้องตรงกับ link frame ใน URDF** — สำหรับ `meshes/` ตอนนี้
+`tools/generate_sim_meshes.py` เป็นคนรับประกันให้แล้ว (เขียน mesh ที่ origin เดียวกับ
+link เสมอ เป็นเมตร จึงไม่มี scale factor และไม่มีขั้นตอนมือให้พลาด)
+คำเตือนนี้ยังมีผลกับไฟล์ที่ export ด้วยมือจาก Fusion เท่านั้น — เป็นความผิดพลาด
+ที่พบบ่อยที่สุดของงานมือแบบนั้น และอาการคือชิ้นส่วนลอยหรือหมุนผิดจุดใน Isaac
 ดู [../../hardware/mechanical/coordinate-frames.md](../../hardware/mechanical/coordinate-frames.md)
 
 ---
