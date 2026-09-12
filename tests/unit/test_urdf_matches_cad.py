@@ -196,6 +196,16 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
     throwing away the overhang, and the mast is not box-shaped at all, so the
     collision is the two boxes plus the cylinder the rover actually has.
 
+    The overhang is not decoration -- it is the entire reason this is two
+    boxes rather than one.  A test that only counted primitives and checked
+    the lower box's clearance would let a future edit widen or shrink the
+    upper box to the wheel-clearing width and still pass, silently flattening
+    the body back down to the frame width.  So the box that does *not* reach
+    below the wheel tops must be asserted wider than the wheel inner faces,
+    not merely left unchecked.  The mast cylinder gets the same treatment as
+    test_wheel_collision_is_a_cylinder_sized_from_cad: its radius, length, and
+    height are checked against CAD, not just its shape and count.
+
     cad/urdf/README.md#collision still holds: primitives only.
     """
     cad = _cad()
@@ -212,12 +222,12 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
         assert (box is not None) != (cylinder is not None), (
             "each collision must be exactly one of box or cylinder"
         )
+        _, _, z = _xyz(collision.find("origin"))
         if box is not None:
-            _, _, z = _xyz(collision.find("origin"))
             _, width, height = (float(v) for v in box.get("size").split())
             boxes.append((z - height / 2, z + height / 2, width))
         else:
-            cylinders.append(cylinder)
+            cylinders.append((cylinder, z))
 
     assert len(boxes) == 2, f"expected 2 box collisions, found {len(boxes)}"
     assert len(cylinders) == 1, f"expected 1 cylinder collision (the mast), found {len(cylinders)}"
@@ -230,10 +240,39 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
                 f"a collision box {width * MM_PER_M:.0f} mm wide reaches below the "
                 f"wheel tops, where only {inner_faces * MM_PER_M:.0f} mm fits"
             )
+        else:
+            assert width > inner_faces + 1e-9, (
+                f"the box above the wheel tops is {width * MM_PER_M:.0f} mm wide, no "
+                f"wider than the {inner_faces * MM_PER_M:.0f} mm wheel inner faces - it "
+                "no longer overhangs, so a single box could describe the whole shape"
+            )
         assert bottom >= cad["chassis_clearance_mm"] / MM_PER_M - 1e-9, (
             f"a collision box bottom at {bottom * MM_PER_M:.0f} mm is below the belly "
             f"plane at {cad['chassis_clearance_mm']:.0f} mm"
         )
+
+    mast, mast_z = cylinders[0]
+    expected_radius = cad["mast_diameter_mm"] / 2 / MM_PER_M
+    expected_length = cad["mast_height_mm"] / MM_PER_M
+    expected_z = (
+        cad["chassis_clearance_mm"] + cad["body_height_mm"]
+    ) / MM_PER_M + expected_length / 2
+
+    mast_radius = float(mast.get("radius"))
+    assert mast_radius == pytest.approx(expected_radius, abs=1e-9), (
+        f"mast cylinder radius {mast_radius * MM_PER_M:.1f} mm != "
+        f"{expected_radius * MM_PER_M:.1f} mm from mast_diameter_mm"
+    )
+    mast_length = float(mast.get("length"))
+    assert mast_length == pytest.approx(expected_length, abs=1e-9), (
+        f"mast cylinder length {mast_length * MM_PER_M:.0f} mm != "
+        f"{expected_length * MM_PER_M:.0f} mm from mast_height_mm"
+    )
+    assert mast_z == pytest.approx(expected_z, abs=1e-9), (
+        f"mast cylinder centred at z={mast_z * MM_PER_M:.0f} mm, expected "
+        f"{expected_z * MM_PER_M:.0f} mm from chassis_clearance_mm + body_height_mm "
+        "+ mast_height_mm / 2"
+    )
 
 
 @pytest.mark.parametrize("name", ["camera_front", "camera_down"])
