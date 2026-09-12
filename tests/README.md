@@ -95,8 +95,11 @@ pio test -e native -d firmware/esp32
 
 ทั้งสองต้องผ่านตารางเดียวกัน **ห้ามแก้ค่าในตารางเพื่อให้ test ผ่าน** — แก้ implementation
 
-ตารางมี row ที่ทดสอบ saturation (`320, 40`) ซึ่งต้อง scale ทั้งสองข้าง
-ไม่ใช่ clip ข้างเดียว — ที่ track 120 ค่านี้ทำให้ล้อขวาเกิน 202 พอสมควร
+ตารางมี row ที่ทดสอบ saturation (`500, 25`) ซึ่งต้อง scale ทั้งสองข้าง
+ไม่ใช่ clip ข้างเดียว — ที่ track 430 กับ `wheel_v_max` 327 แถวนี้ให้
+`v_left`/`v_right` ก่อน scale เป็น 406.189/593.811 mm/s ซึ่งเกิน 327 ทั้งคู่
+scale ด้วยอัตราส่วนเดิมจนล้อที่เร็วกว่าแตะเพดานพอดี ให้ `223.680 / 327.000`
+(ดู [`config/drive_mixing_vectors.csv`](../config/drive_mixing_vectors.csv))
 จึงแยกได้ชัดว่า implementation scale หรือ clip
 
 ---
@@ -215,7 +218,7 @@ name: row-curved
 
 bed:
   bed_length_mm: 2000
-  row_spacing_mm: 350
+  row_spacing_mm: 750
   row_curvature_mm: 40
   crop_gap_probability: 0
 

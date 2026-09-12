@@ -45,7 +45,7 @@ World
 ├── Rover                        วิ่งในร่อง
 │   ├── base_link
 │   ├── wheel_fl · wheel_fr · wheel_rl · wheel_rr   continuous joint, velocity drive
-│   ├── camera_front             tilt ~45° มองไปข้างหน้า
+│   ├── camera_front             tilt ~50° มองไปข้างหน้า
 │   └── camera_down              top-down
 │
 └── Lighting
@@ -70,25 +70,33 @@ robots/rover/rover.usd           override layer — commit
 ```text
 Bed                       2000 × 1000 mm  (ยาว × กว้าง)
 Crop rows                 3 แถว ตามยาว
-row_spacing               350 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
+row_spacing               750 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
 crop_foliage_half_width   30 mm       ใบยื่นออกจากกึ่งกลางแถวข้างละเท่านี้
-clear furrow              290 mm      350 − 2 × 30  ◄── ค่าที่ rover ใช้จริง
+clear furrow              690 mm      750 − 2 × 30  ◄── ค่าที่ rover ใช้จริง
 crop_spacing              80 mm ตามแถว
 Edge margin               150 mm แต่ละข้าง
 Furrows                   2 ร่องระหว่างแถว — MVP วิ่งร่องเดียว
 ```
 
+⚠️ **ความกว้างแปลง (1000 mm) และ edge margin (150 mm) ไม่มีที่มาที่ตรวจสอบได้ใน
+repo นี้** — ไม่มี config key หรือ test ใดอ้างอิงตัวเลขทั้งสอง (มีแค่
+`bed_length_mm: 2000` ใน `config/simulation.yaml` ซึ่งคุมความยาว ไม่ใช่ความกว้าง)
+ตัวเลขนี้ดูเหมือนมาจากรุ่นก่อน scale-up และไม่ได้ถูกทวนกับ 3 แถวที่ระยะ 750 mm
+(ซึ่งต้องการความกว้างมากกว่า 1000 mm อย่างชัดเจน) — บันทึกไว้ว่าเป็นสิ่งที่สังเกตเห็น
+ไม่ใช่ค่าที่ยืนยันแล้ว
+
 **`row_spacing` ไม่ใช่ความกว้างที่ rover วิ่งได้** — invariant ทุกข้อที่เกี่ยวกับ
 ช่องว่างด้านข้างใช้ `clear_furrow` ไม่ใช่ `row_spacing`
 
-`row_spacing = 350 mm` มาจาก invariant ไม่ใช่จากการเลือก:
+`row_spacing = 750 mm` มาจาก invariant ไม่ใช่จากการเลือก (`controller/startup_checks.py`
+invariant `furrow_fits_the_rover`, ค่าจาก `config/rover.yaml`):
 
 ```text
-clear_furrow > body_width + 2 × runaway_budget
+clear_furrow > body_width + 2 × runaway_budget = 520 + 2 × 60 = 640
 
-ที่ 250 mm:  190 > 266   ไม่ผ่าน
-ที่ 300 mm:  240 > 266   ไม่ผ่าน
-ที่ 350 mm:  290 > 266   ผ่าน  margin 24 mm
+ที่ 650 mm:  590 > 640   ไม่ผ่าน
+ที่ 700 mm:  640 > 640   ไม่ผ่าน (เท่ากันพอดี ไม่ใช่มากกว่า)
+ที่ 750 mm:  690 > 640   ผ่าน  margin 50 mm
 ```
 
 **BedFrame ขอบยกสูงกว่าล้อ ไม่ใช่ของประดับ** — MVP ไม่มี bumper switch
@@ -126,16 +134,16 @@ base_link
  ├── wheel_fr   continuous joint
  ├── wheel_rl   continuous joint
  ├── wheel_rr   continuous joint
- ├── camera_front   fixed, tilt ~45°
+ ├── camera_front   fixed, tilt ~50°
  └── camera_down    fixed, top-down
 ```
 
 ```text
-track_width          120 mm
-wheelbase            120 mm
-body_width           146 mm   ◄── รวมล้อ (track 120 + wheel_width 26)
-wheel_diameter        65 mm
-chassis_clearance     35 mm
+track_width          430 mm
+wheelbase            400 mm
+body_width           520 mm   ◄── รวมล้อ (track 430 + wheel_width 90)
+wheel_diameter       250 mm
+chassis_clearance    125 mm
 ```
 
 **ไม่มี suspension** — chassis แข็ง 4 ล้อ บนผิว ±15 mm จะมีจังหวะล้อลอยและเสียแรงขับ
@@ -145,8 +153,8 @@ chassis_clearance     35 mm
 ### Geometry invariants ที่ผูกกับ sim
 
 ```text
-wheel_diameter    >= 4 × soil_variation     65 >= 60    ล้อเล็กเกินจะสะดุดทุกก้อนดิน
-chassis_clearance >  soil_variation         35 >  15    ท้องไม่ครูดยอดดิน
+wheel_diameter    >= 4 × soil_variation    250 >= 60    ล้อเล็กเกินจะสะดุดทุกก้อนดิน (margin 190)
+chassis_clearance >  soil_variation        125 >  15    ท้องไม่ครูดยอดดิน (margin 110)
 ```
 
 ---
@@ -195,7 +203,7 @@ row follower ปิดลูปด้วยภาพ — มันแก้ค�
 
 | Hardware | Simulation |
 |---|---|
-| Camera front (tilt 45°) | RGB Camera ผูกกับ `base_link` |
+| Camera front (tilt 50°) | RGB Camera ผูกกับ `base_link` |
 | Camera down (top-down) | RGB Camera ผูกกับ `base_link` |
 | DC gear motor × 4 | Continuous joint × 4 (velocity drive) |
 | E-stop sense line | Virtual Digital Input |
@@ -213,7 +221,7 @@ Path: `sim/isaac/environments/`
 generate_bed(
     bed_length_mm=2000,
     crop_rows=3,
-    row_spacing_mm=350,
+    row_spacing_mm=750,
     crop_spacing_mm=80,
     weed_count=20,
     soil_variation_mm=15,
@@ -301,7 +309,7 @@ simulation:
     bed_length_mm: 2000
     crop_rows: 3
     crop_spacing_mm: 80
-    row_spacing_mm: 350
+    row_spacing_mm: 750
     weed_count: 20
 
   randomization:

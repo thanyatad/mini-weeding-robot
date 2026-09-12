@@ -222,13 +222,13 @@ Firmware ต้อง enforce limit ตาม `config/rover.yaml` ไม่ hard
 
 ```yaml
 rover:
-  track_width_mm: 120
-  wheel_diameter_mm: 65
+  track_width_mm: 430
+  wheel_diameter_mm: 250
 
   drive:
-    v_max_mm_s: 100
-    omega_max_deg_s: 40
-    wheel_v_max_mm_s: 340
+    v_max_mm_s: 160
+    omega_max_deg_s: 25
+    wheel_v_max_mm_s: 327
     wheel_v_min_mm_s: 51
 
 safety:

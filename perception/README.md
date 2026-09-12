@@ -210,8 +210,8 @@ for blob in blobs(mask):
 ### `furrow_corridor` มาจากเรขาคณิต
 
 ```text
-clear furrow   row_spacing − 2 × crop_foliage_half_width   350 − 60 = 290 mm
-corridor       clear_furrow − 2 × max_lateral_error_mm     290 − 80 = 210 mm
+clear furrow   row_spacing − 2 × crop_foliage_half_width   750 − 60 = 690 mm
+corridor       clear_furrow − 2 × max_lateral_error_mm      690 − 80 = 610 mm
 ```
 
 `corridor` คือแถบที่ **รับประกันว่าอยู่ในร่อง** แม้ rover เบี่ยงเต็มพิสัย —

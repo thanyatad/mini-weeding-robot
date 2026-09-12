@@ -28,7 +28,7 @@ sim/isaac/
 │       └── config.yaml         # Joint drive gains, friction
 │
 ├── sensors/
-│   ├── camera_front.py         # → CameraSet.front()   tilt ~45°
+│   ├── camera_front.py         # → CameraSet.front()   tilt ~50°
 │   ├── camera_down.py          # → CameraSet.down()    top-down
 │   ├── estop.py                # virtual digital input
 │   └── sensor_manager.py
@@ -63,11 +63,15 @@ state machine, safety policy หลัก
 ```text
 Bed                       2000 × 1000 mm
 Crop rows                 3 แถว ตามยาว
-row_spacing               350 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
+row_spacing               750 mm      กึ่งกลางแถวถึงกึ่งกลางแถว
 crop_foliage_half_width    30 mm
-clear furrow              290 mm      ◄── ค่าที่ rover ใช้จริง
+clear furrow              690 mm      ◄── ค่าที่ rover ใช้จริง
 Furrows                   2 ร่อง — MVP วิ่งร่องเดียว
 ```
+
+⚠️ ความกว้างแปลง 1000 mm ด้านบนไม่มีที่มาที่ตรวจสอบได้ในนี้ (ไม่มี config key
+หรือ test อ้างอิงมัน) — ดูรายละเอียดที่
+[docs/simulation.md#bed-geometry](../../docs/simulation.md#bed-geometry)
 
 **`row_spacing` ไม่ใช่ความกว้างที่ rover วิ่งได้** — `clear_furrow` คือค่าที่
 startup invariant ใช้ ไม่ใช่ `row_spacing`
@@ -98,7 +102,7 @@ Skid-steer 4WD — 4 ล้อขับ ไม่มีพวงมาลัย
 ```text
 base_link
  ├── wheel_fl · wheel_fr · wheel_rl · wheel_rr    continuous joint, velocity drive
- ├── camera_front   fixed, tilt ~45°
+ ├── camera_front   fixed, tilt ~50°
  └── camera_down    fixed, top-down
 ```
 
@@ -138,7 +142,7 @@ Saturation ต้อง **scale ทั้งสองข้างตามอั
 
 | Hardware | Simulation |
 |---|---|
-| Camera front (tilt 45°) | RGB Camera ผูกกับ `base_link` — 640×480 |
+| Camera front (tilt 50°) | RGB Camera ผูกกับ `base_link` — 640×480 |
 | Camera down (top-down) | RGB Camera ผูกกับ `base_link` — 1280×720 |
 | DC gear motor × 4 | Continuous joint × 4 (velocity drive) |
 | E-stop sense line | Virtual digital input |
@@ -157,7 +161,7 @@ Saturation ต้อง **scale ทั้งสองข้างตามอั
 generate_bed(
     bed_length_mm=2000,
     crop_rows=3,
-    row_spacing_mm=350,
+    row_spacing_mm=750,
     crop_spacing_mm=80,
     weed_count=20,
     soil_variation_mm=15,
