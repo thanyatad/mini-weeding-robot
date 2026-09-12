@@ -1,0 +1,39 @@
+# Golden test vectors — skid-steer mixing
+#
+# SOURCE OF TRUTH สำหรับสูตร mixing ที่ถูก implement 2 ที่ที่แชร์โค้ดกันไม่ได้:
+#   tests/unit/test_drive_mixing.py         Python / IsaacRover
+#   firmware/esp32/test/test_mixing.cpp     C++ / PlatformIO native env
+#
+# ทั้งสองต้องผ่านตารางนี้ ถ้าตัวใดตัวหนึ่ง fail แปลว่า implementation เพี้ยนจากกัน
+# ห้ามแก้ค่าในตารางเพื่อให้ test ผ่าน — แก้ implementation
+#
+# สูตร:
+#   omega_rad = omega_deg_s * pi / 180
+#   v_left    = v_mm_s - omega_rad * track_width_mm / 2
+#   v_right   = v_mm_s + omega_rad * track_width_mm / 2
+#
+# Saturation: ถ้าล้อข้างใดเกิน wheel_v_max_mm_s ให้ scale ทั้งสองข้างตามอัตราส่วนเดิม
+#             ห้าม clip ข้างเดียว เพราะจะเปลี่ยน omega ที่ได้จริงโดยเงียบ
+#             แถวสุดท้าย (320, 40) เป็นเคสที่ทดสอบข้อนี้
+#
+# พารามิเตอร์ที่ตารางนี้อิงอยู่ (จาก config/rover.yaml):
+#   track_width_mm    = 120
+#   wheel_v_max_mm_s  = 340
+# ถ้า track_width หรือ wheel_v_max เปลี่ยน ต้อง regenerate ตารางนี้ทั้งชุด
+#
+# Reader ต้องข้ามบรรทัดที่เริ่มด้วย '#' และบรรทัดว่าง
+# Tolerance ในการเทียบ: +/- 0.01 mm/s
+#
+v_mm_s,omega_deg_s,v_left_mm_s,v_right_mm_s
+0,0,0.000,0.000
+100,0,100.000,100.000
+100,10,89.528,110.472
+100,-10,110.472,89.528
+100,20,79.056,120.944
+100,-20,120.944,79.056
+100,40,58.112,141.888
+100,-40,141.888,58.112
+50,40,8.112,91.888
+-100,0,-100.000,-100.000
+-100,20,-120.944,-79.056
+320,40,261.291,340.000

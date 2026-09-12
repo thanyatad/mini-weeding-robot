@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# PlatformIO / ESP32
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Isaac Sim / USD artifacts
+*.usdc.bak
+sim/isaac/**/output/
+*.log
+
+# Generated from URDF by scripts/import_urdf.sh — never edit or commit
+sim/isaac/robots/rover/rover_base.usd
+
+# Fusion 360 local backups / lock files
+cad/fusion/*.f3d.lock
+cad/fusion/**/.AutoSave*
+*.f3d.bak
+
+# Perception models & datasets (large binaries — track via LFS or external store)
+perception/models/*
+!perception/models/.gitkeep
+tools/dataset/out/
+
+# Local config overrides
+config/*.local.yaml
+
+# Weed detection logs (observation output, not source)
+logs/
+
+# Test & CI output
+test-output/
+htmlcov/
+.coverage
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
