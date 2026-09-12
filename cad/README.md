@@ -111,10 +111,15 @@ Friction ของล้อกับ heightfield เป็นค่าที่ 
 แล้วรัน:
 
 ```bash
-pytest tests/unit/test_cad_config_sync.py
+pytest tests/unit/test_cad_config_sync.py       # จับ config/ ที่ยังไม่ตามขนาดใหม่
+pytest tests/unit/test_generate_sim_meshes.py   # จับ mesh ที่ยังไม่ regenerate
+pytest tests/unit/test_urdf_matches_cad.py      # จับ URDF ที่ยังอ้างขนาดเก่า
 ```
 
-ถ้า test fail แปลว่ามีค่าใน `config/` ที่ derived มาจาก CAD แล้วยังไม่ได้อัปเดต
+ทั้งสามข้อจับคนละจุดพัง เปลี่ยนขนาดครั้งเดียวอาจทำให้ข้อใดข้อหนึ่งพังโดยที่อีกสองข้อยังผ่าน
+ต้องรันครบทั้งสาม — ไม่ใช่แค่ข้อแรก
+
+ถ้า `test_cad_config_sync.py` fail แปลว่ามีค่าใน `config/` ที่ derived มาจาก CAD แล้วยังไม่ได้อัปเดต
 ดูตาราง derived ใน [parameters/README.md](parameters/README.md)
 
 **อย่าแก้ค่าใน `config/rover.yaml` เพื่อให้ test ผ่าน** ถ้าต้นเหตุคือ CAD เปลี่ยน —
@@ -127,7 +132,8 @@ STEP/STL งานผลิตยังตามหลัง Fusion เหมื
 
 1. เปิด `rover.f3d` แก้ **user parameter** ให้ตรงกับ `parameters.csv`
    (อย่าแก้ sketch ตรง ๆ)
-2. Export `cad/exports/step/` และ `cad/exports/stl/` ใหม่เฉพาะชิ้นที่กระทบ
+2. Export `cad/exports/step/` ชิ้นที่กระทบ
+3. Export `cad/exports/stl/` เฉพาะชิ้นที่ต้องพิมพ์ใหม่
 
 ---
 
