@@ -3,41 +3,62 @@
 # ถอดมาจาก cad/parameters/README.md#parameters ตรง ๆ — ไฟล์นี้คือสิ่งที่ export
 # ออกจาก Fusion แล้ว commit ทุกครั้งที่แก้ขนาด ห้ามแก้เพื่อให้ test ผ่าน
 #
+# Rover Base V0 — 650 x 520 mm, ล้อ O250, 4WD skid steer, ~35 kg
+# Design: docs/superpowers/specs/2026-09-12-rover-base-v0-scale-up-design.md
+#
 # ค่าที่ไหลจาก CAD ไป config อยู่ในตาราง Derived Values ของ README
 # บังคับด้วย:
 #
 #   pytest tests/unit/test_cad_config_sync.py
 #
-# body_width_mm ไม่ใช่ความกว้างแชสซี — เป็นความกว้างรวมล้อ:
-#   body_width = max(chassis_plate_width, track_width + wheel_width)
-#              = max(140, 120 + 25) = 145
-# ส่วนที่ชนใบพืชคือล้อ ไม่ใช่ตัวถัง ข้อนี้เป็นที่มาของการลด track_width 140 -> 120
+# สามค่าต่อไปนี้เป็น "ผลลัพธ์" ไม่ใช่ตัวเลือก — test บังคับความสัมพันธ์ไว้:
+#
+#   overall_length     = wheelbase + wheel_diameter   = 400 + 250 = 650
+#   body_width         = max(chassis_plate_width, track_width + wheel_width)
+#                      = max(340, 430 + 90) = 520
+#   chassis_plate_width <= track_width - wheel_width  = 430 - 90 = 340
+#
+# body_width ไม่ใช่ความกว้างแชสซี — เป็นความกว้างรวมล้อ ส่วนที่ชนใบพืชคือล้อ
+# chassis_plate_width ถูกบังคับให้ <= 340 เพราะโครงอยู่ในช่วง z 125-250 ซึ่งเป็น
+# ที่ที่ล้ออยู่ ตัวถังเหนือ z 250 ยื่นได้ถึง 380 mm
+#
+# ⚠️ 340 คือ "ค่าสูงสุด" ไม่ใช่ค่าที่มี clearance — ที่ 340 โครงแตะหน้าในล้อพอดี
+#    (+/-170 ทั้งคู่) ไม่เหลือช่องให้ค่าความคลาดเคลื่อน +/-2 mm ที่ source spec
+#    section 16 ยอมให้ ตอนขึ้นรูปจริงใน Fusion ควรใช้ 320 เพื่อให้เหลือข้างละ 10 mm
+#    ค่า 340 ที่นี่เป็นค่า "ขอบเขต" ที่ test บังคับ ไม่ใช่ค่าที่แนะนำให้ตัดเหล็ก
 #
 # wheel_v_max_mm_s ใน config ไม่ได้เท่ากับพารามิเตอร์ตัวใดตัวหนึ่งที่นี่ แต่เป็นสูตร:
-#   (motor_rpm / 60) x pi x wheel_diameter_mm = (55/60) x pi x 70 = 201.6 -> 202
-# motor_rpm มาจาก hardware/bom/poc-v2.md ไม่ใช่จาก CAD
+#   (motor_rpm / 60) x pi x wheel_diameter_mm = (25/60) x pi x 250 = 327.2 -> 327
+# motor_rpm มาจาก hardware/bom/poc-v3.md ไม่ใช่จาก CAD
+#
+# chassis_clearance_mm = 125 เท่ากับรัศมีล้อพอดี ท้องรถอยู่ที่ระดับเพลา —
+# ห้ามมีอะไรต่ำกว่าแนวศูนย์กลางเพลา ดู hardware/bom/poc-v3.md
 #
 # ⚠️ camera_front_tilt_deg และ camera_front_height_mm กำหนด lookahead distance
 #    ซึ่งคือสิ่งที่ gain ของ row follower ถูก tune กับมัน
-#    **ไม่มีสูตรจากเรขาคณิตไป gain และไม่มี test จับได้** — ขยับขายึดกล้องเมื่อไร
-#    ต้อง tune gain ใหม่ที่ V1 และ V4 ด้วยมือ ดู config/control.yaml
+#    **ไม่มีสูตรจากเรขาคณิตไป gain และไม่มี test จับได้** — lookahead ขยับจาก
+#    180 mm เป็น 713 mm ในรอบนี้ ต้อง tune ใหม่ที่ V1 และ V4 ด้วยมือ
+#    ดู config/control.yaml
 #
 # Reader ต้องข้ามบรรทัดที่เริ่มด้วย '#' และบรรทัดว่าง
 #
 name,value,unit,comment
-body_length_mm,200,mm,ความยาวตัวถัง (ไม่รวมล้อ)
-chassis_plate_width_mm,140,mm,ความกว้างแผ่นแชสซี
-body_width_mm,145,mm,ความกว้างรวมล้อ = จุดกว้างสุดของรถ
-body_height_mm,70,mm,ความสูงตัวถัง (ไม่รวมเสากล้อง)
-chassis_clearance_mm,35,mm,จากพื้นถึงท้องรถ
-track_width_mm,120,mm,ระยะกึ่งกลางล้อซ้ายถึงกึ่งกลางล้อขวา
-wheelbase_mm,120,mm,ระยะกึ่งกลางเพลาหน้าถึงกึ่งกลางเพลาหลัง
-wheel_diameter_mm,70,mm,เส้นผ่านศูนย์กลางล้อรวมยาง
-wheel_width_mm,25,mm,ความกว้างหน้ายาง
-motor_mount_pitch_mm,15,mm,ระยะรูยึดมอเตอร์
-camera_front_height_mm,180,mm,ความสูงเหนือ soil reference
-camera_front_tilt_deg,45,deg,มุมก้มจากแนวนอน
-camera_front_offset_x_mm,90,mm,เลื่อนไปข้างหน้าจาก base_link
-camera_down_height_mm,220,mm,ความสูงเหนือ soil reference
+overall_length_mm,650,mm,ความยาวรวมวัดคร่อมล้อ = wheelbase + wheel_diameter
+body_length_mm,500,mm,ความยาวตัวถัง (ไม่รวมล้อ)
+chassis_plate_width_mm,340,mm,ความกว้างโครงช่วงล้อ = ระยะหน้าในล้อ
+body_width_mm,520,mm,ความกว้างรวมล้อ = จุดกว้างสุดของรถ
+body_height_mm,280,mm,ความสูงตัวถัง (ไม่รวม mast)
+chassis_clearance_mm,125,mm,จากพื้นถึงท้องรถ = รัศมีล้อพอดี
+track_width_mm,430,mm,ระยะกึ่งกลางล้อซ้ายถึงกึ่งกลางล้อขวา
+wheelbase_mm,400,mm,ระยะกึ่งกลางเพลาหน้าถึงกึ่งกลางเพลาหลัง
+wheel_diameter_mm,250,mm,เส้นผ่านศูนย์กลางล้อรวมยาง
+wheel_width_mm,90,mm,ความกว้างหน้ายาง
+motor_mount_bolt_circle_mm,60,mm,bolt circle หน้าแปลนมอเตอร์ 4 x M5
+mast_diameter_mm,35,mm,ท่อ mast
+mast_height_mm,500,mm,ความสูง mast เหนือหลังคาตัวถัง
+camera_front_height_mm,850,mm,ความสูงเหนือ soil reference (ใน mast head)
+camera_front_tilt_deg,50,deg,มุมก้มจากแนวนอน
+camera_front_offset_x_mm,0,mm,mast อยู่กึ่งกลางตัวรถ
+camera_down_height_mm,850,mm,ความสูงเหนือ soil reference (ใน mast head)
 camera_down_tilt_deg,0,deg,0 = มองตรงลง
 camera_down_offset_x_mm,0,mm,อยู่กึ่งกลางตัวรถ

@@ -31,6 +31,7 @@ BOM_MD = REPO / "hardware" / "bom" / "poc-v3.md"
 #: skipped check.
 EXPECTED_PARAMETERS = (
     # Chassis
+    "overall_length_mm",
     "body_length_mm",
     "chassis_plate_width_mm",
     "body_width_mm",
@@ -41,7 +42,10 @@ EXPECTED_PARAMETERS = (
     "wheelbase_mm",
     "wheel_diameter_mm",
     "wheel_width_mm",
-    "motor_mount_pitch_mm",
+    "motor_mount_bolt_circle_mm",
+    # Mast
+    "mast_diameter_mm",
+    "mast_height_mm",
     # Camera
     "camera_front_height_mm",
     "camera_front_tilt_deg",
@@ -154,6 +158,43 @@ def test_body_width_is_the_widest_point_not_the_chassis_plate():
         f"track_width {parameters['track_width_mm']} + "
         f"wheel_width {parameters['wheel_width_mm']}) = {expected} — "
         f"body_width must be the overall width including the wheels"
+    )
+
+
+def test_overall_length_is_measured_across_the_wheels():
+    """Design decision S2.  The source spec said 620 mm with a 400 mm wheelbase
+    and a 250 mm wheel, which is 15 mm short per side of where the wheel
+    actually ends.  Width already used the across-the-wheels convention and
+    closed exactly (430 + 90 = 520); length now uses the same one.
+
+    A future edit that "restores" 620 without moving the wheelbase puts the
+    envelope inside the tyres, and nothing else in the repo would notice.
+    """
+    parameters = _cad_parameters()
+    expected = parameters["wheelbase_mm"] + parameters["wheel_diameter_mm"]
+    assert parameters["overall_length_mm"] == expected, (
+        f"CAD overall_length_mm = {parameters['overall_length_mm']} but "
+        f"wheelbase {parameters['wheelbase_mm']} + "
+        f"wheel_diameter {parameters['wheel_diameter_mm']} = {expected} — "
+        f"overall_length is measured across the wheels, like body_width"
+    )
+
+
+def test_the_chassis_plate_clears_the_inner_faces_of_the_wheels():
+    """Design decision S3.  The frame lives between z = 125 (belly) and z = 250
+    (wheel top), which is exactly where the wheels are.  At the source spec's
+    380 mm it overlaps each wheel by 20 mm.
+
+    The plate may be narrower than the inner faces, never wider.  The body
+    above z = 250 is free to overhang, and does at 380 mm.
+    """
+    parameters = _cad_parameters()
+    inner_faces = parameters["track_width_mm"] - parameters["wheel_width_mm"]
+    assert parameters["chassis_plate_width_mm"] <= inner_faces, (
+        f"CAD chassis_plate_width_mm = {parameters['chassis_plate_width_mm']} but the "
+        f"wheel inner faces are {inner_faces} mm apart "
+        f"(track {parameters['track_width_mm']} - wheel_width {parameters['wheel_width_mm']}) — "
+        f"the frame would hit the wheels"
     )
 
 
