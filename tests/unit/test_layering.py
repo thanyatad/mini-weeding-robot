@@ -29,7 +29,7 @@ def test_nothing_on_the_control_path_depends_on_a_pose(directory):
         f"{path.relative_to(REPO)}:{n}"
         for path in _python_sources(directory)
         for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
-        if re.search(r"poses?", line, re.IGNORECASE)
+        if re.search(r"(?<![A-Za-z])poses?", line, re.IGNORECASE)
     ]
     assert offenders == [], f"pose reached the control path: {offenders}"
 
