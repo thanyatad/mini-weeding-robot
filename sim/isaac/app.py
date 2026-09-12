@@ -50,6 +50,10 @@ from sim.isaac.world import (  # noqa: E402
     build_world,
 )
 
+#: Whether world.step() renders.  It also changes how much simulated time one
+#: step covers, which is the reason step_seconds() below exists.
+RENDER = not args.headless
+
 #: The Stage 2 acceptance cases, in the order V1-ISAAC.md lists them.  The last
 #: entry is stop(), which is why it carries a label rather than a command.
 DEFAULT_CASES = (
@@ -70,6 +74,19 @@ def parse_cases():
     return tuple(cases)
 
 
+def step_seconds(world) -> float:
+    """How much simulated time a single ``world.step()`` covers.
+
+    NOT always the physics step.  ``step(render=True)`` advances by the
+    RENDERING period, running as many physics substeps as that takes: at 60 Hz
+    physics and 30 Hz render, 60 steps advance 1.0 s headless and 2.0 s with a
+    window open.  Assuming physics_dt in both reports every speed in the GUI at
+    exactly twice its real value - which is a very convincing bug, because the
+    rover looks fine and only the numbers lie.
+    """
+    return world.get_rendering_dt() if RENDER else world.get_physics_dt()
+
+
 def _yaw(quaternion) -> float:
     """Yaw from a (w, x, y, z) quaternion, the order Isaac returns."""
     w, x, y, z = (float(value) for value in quaternion)
@@ -79,28 +96,30 @@ def _yaw(quaternion) -> float:
 def run_case(world, rover, body, label, v_mm_s, omega_deg_s):
     """Settle, command, run, and report what the body actually did."""
     world.reset()
-    dt_s = world.get_physics_dt()
+    step_s = step_seconds(world)
 
-    for _ in range(max(0, round(args.settle / dt_s))):
-        world.step(render=not args.headless)
+    for _ in range(max(0, round(args.settle / step_s))):
+        world.step(render=RENDER)
 
     if v_mm_s is None:
         rover.drive(100.0, 0.0)
-        for _ in range(max(1, round(1.0 / dt_s))):
-            world.step(render=not args.headless)
+        for _ in range(max(1, round(1.0 / step_s))):
+            world.step(render=RENDER)
         rover.stop()
         sides = rover.wheel_velocities(0.0, 0.0)
     else:
         rover.drive(v_mm_s, omega_deg_s)
         sides = rover.wheel_velocities(v_mm_s, omega_deg_s)
 
-    steps = max(1, round(args.seconds / dt_s))
     start_position, start_orientation = body.get_world_pose()
-    for _ in range(steps):
-        world.step(render=not args.headless)
+    start_time_s = world.current_time
+    for _ in range(max(1, round(args.seconds / step_s))):
+        world.step(render=RENDER)
     end_position, end_orientation = body.get_world_pose()
 
-    elapsed_s = steps * dt_s
+    # Taken from the clock rather than counted, so the number cannot be wrong
+    # even if the relationship between a step and a second changes again.
+    elapsed_s = world.current_time - start_time_s
     travelled_mm = 1000.0 * math.dist(start_position[:2], end_position[:2])
     yaw_deg = math.degrees(_yaw(end_orientation) - _yaw(start_orientation))
     yaw_deg = (yaw_deg + 180.0) % 360.0 - 180.0
@@ -110,6 +129,7 @@ def run_case(world, rover, body, label, v_mm_s, omega_deg_s):
         f"  target L={sides.left_rad_s:8.4f} R={sides.right_rad_s:8.4f} rad/s"
         f"  ->  v={travelled_mm / elapsed_s:8.1f} mm/s"
         f"  omega={yaw_deg / elapsed_s:7.2f} deg/s"
+        f"  over {elapsed_s:.2f} s"
     )
 
 

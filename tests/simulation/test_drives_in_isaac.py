@@ -77,12 +77,16 @@ def run(sim, v_mm_s, omega_deg_s, *, seconds=RUN_S):
         rover.drive(v_mm_s, omega_deg_s)
 
     start_position, start_orientation = body.get_world_pose()
-    steps = round(seconds / dt_s)
-    for _ in range(steps):
+    start_time_s = world.current_time
+    for _ in range(round(seconds / dt_s)):
         world.step(render=False)
     end_position, end_orientation = body.get_world_pose()
 
-    elapsed_s = steps * dt_s
+    # From the clock, not counted.  These tests step with render=False, where a
+    # step is one physics step - but step(render=True) advances by the RENDERING
+    # period instead, and counting would then report every speed here at twice
+    # its real value.  sim/isaac/app.py hit exactly that.
+    elapsed_s = world.current_time - start_time_s
     yaw_deg = math.degrees(_yaw(end_orientation) - _yaw(start_orientation))
     yaw_deg = (yaw_deg + 180.0) % 360.0 - 180.0
 
