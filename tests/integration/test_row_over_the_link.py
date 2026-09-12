@@ -24,6 +24,8 @@ Two endings, and the second is the one that matters:
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from bridge.protocol import Fault
@@ -31,7 +33,7 @@ from bridge.simulator import Esp32Emulator
 from controller.config import get, load_config
 from controller.motion import RowFollower
 from controller.rover import Esp32Rover, FakeRover
-from controller.safety import LinkMonitor, RowLossWatchdog
+from controller.safety import FaultManager, LinkMonitor, RowLossWatchdog
 from controller.workflow import (
     ROW_END_SUSPECTED,
     ErrorCode,
@@ -40,7 +42,6 @@ from controller.workflow import (
     RowRun,
     StateMachine,
 )
-from controller.workflow.row_run import FAULT_EVENTS
 from tests.harness import FakeRowSensor, straight_row
 
 BED_LENGTH_MM = 2000.0
@@ -57,12 +58,25 @@ class CutWire:
     def __init__(self, board: Esp32Emulator) -> None:
         self._board = board
         self.connected = True
+        self.outbound = True
 
     def cut(self) -> None:
         self.connected = False
 
+    def cut_outbound(self) -> None:
+        """Break Pi -> board only, leaving board -> Pi intact.
+
+        A broken TX line rather than an unplugged cable, and the two fail
+        differently: with both directions gone the Pi hears nothing and has to
+        work the fault out from link_age_ms, but with only the outbound half
+        gone the board notices first and *says so*.  That is the path where an
+        error message off the wire has to be turned into a transition, which is
+        the one the bench used to fake.
+        """
+        self.outbound = False
+
     def write_line(self, line: str) -> None:
-        if self.connected:
+        if self.connected and self.outbound:
             self._board.write_line(line)
 
     def read_lines(self) -> list[str]:
@@ -99,6 +113,7 @@ class Bench:
             watchdog=RowLossWatchdog.from_config(self.rover, self.config),
         )
         self.monitor = LinkMonitor.from_config(self.run, self.config)
+        self.fault_manager = FaultManager(self.run)
 
         self.loop_hz = float(get(self.config, "perception.loop_hz"))
         self._dt_ms = 1000.0 / self.loop_hz
@@ -147,10 +162,18 @@ class Bench:
         self.now_ms += self._dt_ms
 
     def _route_faults(self) -> None:
+        """The shipped router, not a copy of it.
+
+        The state check stays here rather than moving into FaultManager: which
+        faults a loop is still interested in is the loop's business, and a
+        router that skipped faults on its own would be a second place deciding.
+        What the bench no longer owns is the translation — Event(fault.code),
+        which silently does nothing for the one code whose string and event are
+        spelled differently.
+        """
         for fault in self.faults:
-            event = Event(fault.code)
-            if event in FAULT_EVENTS and self.state is RoverState.DRIVING_ROW:
-                self.run.report_fault(event)
+            if self.state is RoverState.DRIVING_ROW:
+                self.fault_manager.handle(fault)
         self.faults.clear()
 
     def drive_row(self, max_rounds: int = 400) -> Bench:
@@ -296,3 +319,62 @@ def test_a_reconnected_board_that_rebooted_is_not_mistaken_for_a_healthy_one():
     bench.round()
 
     assert bench.rover.get_drive_state()["link_age_ms"] > 0
+
+
+# -- the board reports a fault the Pi can still hear ------------------------
+
+
+def test_a_broken_outbound_line_ends_in_error_command_timeout():
+    """The board gives up at 300 ms and reports it, and the report is what ends
+    the run -- no link monitor involved, because link_age_ms is only at 300 too
+    and its ceiling is 500."""
+    bench = Bench()
+    for _ in range(30):
+        bench.round()
+    assert bench.state is RoverState.DRIVING_ROW
+
+    bench.wire.cut_outbound()
+    bench.drive_row(max_rounds=50)
+
+    assert bench.state is RoverState.ERROR
+    assert bench.machine.error_code is ErrorCode.COMMAND_TIMEOUT
+    assert bench.link_lost_at_ms is None, "the board got there first"
+
+
+def test_the_board_s_error_reaches_the_workflow_through_the_fault_manager():
+    """The translation the bench used to do inline.  It is worth an assertion
+    of its own because Event(fault.code) happens to work for this code -- and
+    silently does nothing for emergency_stop, which is spelled differently."""
+    bench = Bench()
+    for _ in range(30):
+        bench.round()
+
+    bench.wire.cut_outbound()
+    bench.drive_row(max_rounds=50)
+
+    assert [fault.code for fault in bench.fault_manager.history] == ["command_timeout"]
+
+    # The message is the half of a Fault that does not survive becoming an
+    # Event, and protocol/messages.md asks it to carry the numbers that
+    # identify the fault.  The board rounds up to its own loop period, so what
+    # is pinned is that the elapsed is real and past the deadline -- not a
+    # literal 300, which would be asserting the tick rate.
+    message = bench.fault_manager.history[0].message
+    elapsed_ms = float(re.search(r"(\d+) ms", message).group(1))
+    assert elapsed_ms > get(bench.config, "safety.command_timeout_ms")
+
+
+def test_nothing_is_commanded_on_the_way_into_command_timeout():
+    """The motors are already dead, so there is nothing to stop and nothing to
+    say to the board (§8.5).  report_fault() owns that rule; routing through
+    the fault manager must not have quietly restored the brake."""
+    bench = Bench()
+    for _ in range(30):
+        bench.round()
+
+    bench.wire.cut_outbound()
+    bench.drive_row(max_rounds=50)
+
+    assert bench.board.motors_enabled is False
+    assert ("stop", 1) not in bench.board.discrete_commands
+    assert bench.rover.pending == ()

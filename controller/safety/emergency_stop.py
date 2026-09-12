@@ -53,8 +53,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from controller.workflow import Event
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from controller.workflow import Event, StateMachine
+    from controller.workflow import StateMachine
 
 
 class EmergencyStop:
@@ -82,11 +84,6 @@ class EmergencyStop:
             return None
 
         self._active = active
-        # Imported here rather than at module scope: controller.workflow imports
-        # controller.safety for the row-loss watchdog, and at call time both
-        # packages are fully built.
-        from controller.workflow import Event
-
         event = Event.ESTOP if active else Event.ESTOP_RELEASED
         self._machine.fire(event)
         return event

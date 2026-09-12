@@ -46,7 +46,12 @@ from collections.abc import Callable
 
 from controller.motion import RowEstimate, RowFollower
 from controller.rover import Rover
-from controller.safety import RowLossVerdict, RowLossWatchdog
+
+# The submodule and not the package: controller.safety holds detectors that
+# need controller.workflow at import time, and a partly-built package cannot
+# answer for its own exports.  A submodule import can, whatever order the two
+# packages are first touched in.
+from controller.safety.runaway import RowLossVerdict, RowLossWatchdog
 from controller.workflow.state_machine import Event, RoverState, StateMachine
 
 
