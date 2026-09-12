@@ -1,0 +1,100 @@
+# sim/isaac/robots/rover/config.yaml — physics values for the wheel joints
+#
+# These are the numbers that `rover.usd` authors.  They live here as well
+# because a .usda diff is hard to read and Stage 3 (physics tuning) is the
+# longest job in V1 — the person doing it needs one readable place to look.
+#
+# The two files cannot drift: tests/unit/test_rover_usd_override.py parses
+# rover.usd and asserts every value below appears in it.  Change a number here
+# and that test fails until rover.usd follows.
+#
+# ⚠️ This file is NOT loaded by the controller.  It is not part of `config/`,
+# it has no startup invariant, and nothing in `controller/` may read it — these
+# are simulator-side physics values with no counterpart on the real rover.
+#
+# ⚠️ UNITS.  UsdPhysics authors ANGULAR drives in DEGREES, not radians:
+# rover_base.usd carries `physxJoint:maxJointVelocity = 330.67688`, which is
+# the URDF's 5.7714 rad/s written as deg/s.  So `damping` below is N·m·s/deg.
+# The Python side commands rad/s and isaacsim.core converts — the boundary is
+# sim/isaac/adapters/wheel_adapter.py and it is unit-tested.
+
+wheel_drive:
+  # Velocity drive: stiffness MUST be 0.  A velocity-driven joint with any
+  # stiffness behaves like a position drive, and the wheels fight the target
+  # instead of holding it.
+  stiffness_n_m_per_deg: 0.0
+  damping_n_m_s_per_deg: 0.005
+
+  # max_force is NOT authored here on purpose.  It is the gearbox's continuous
+  # torque limit (5 kg·cm = 0.4903 N·m), it comes from the URDF's <limit
+  # effort=...>, and rover_base.usd already carries it.  Restating it here
+  # would put a BOM number in two places, which is exactly the drift the
+  # two-layer split exists to prevent.
+
+friction:
+  # ⚠️ THESE ARE NOT PHYSICAL VALUES AND NOT A TUNING RESULT.
+  #
+  # Rubber on soil is roughly 0.6–0.9.  0.15 is here because it is the lowest
+  # setting at which the Stage 2 measurements are not actively misleading, and
+  # the honest reading of that is that the wheel/ground contact model is wrong,
+  # not that the coefficient is 0.15.  Measured on flat ground, 3 s per case:
+  #
+  #     mu     drive(100,0)   drive(0,40) yaw   wheel joints while spinning
+  #     0.90      98.2 mm/s        0.00 deg/s   stalled at 0.0 rad/s
+  #     0.50      98.1 mm/s        0.14 deg/s   erratic, wrong signs
+  #     0.15      96.9 mm/s        1.10 deg/s   tracks the target to 0.5%
+  #     0.02      82.9 mm/s        1.57 deg/s   tracks the target
+  #
+  # Straight-line driving is right at every setting.  Turning is not: against a
+  # commanded 40 deg/s the rover yaws at a few percent of that, and lowering
+  # friction by a factor of 45 only moves it from 1.10 to 1.57 deg/s.  So
+  # friction is NOT the knob — the contact has reached a real equilibrium in
+  # which the longitudinal friction driving the yaw and the lateral friction
+  # resisting it very nearly cancel.  The drive is not the limit either: it
+  # produces 0.007 N·m of the 0.4903 N·m it is allowed while holding the
+  # commanded wheel speed exactly.
+  #
+  # Stage 3 owns this.  What it must NOT do is keep lowering this number: the
+  # levers that could actually work are the wheel contact model (a 25 mm line
+  # contact from the collision cylinder), anisotropic friction, or - as
+  # V1-ISAAC.md#risks §3 says outright - revisiting the wheel and running gear
+  # rather than the gains.
+  #
+  # The mass these were measured against (1.038 kg) is itself incomplete: the
+  # motor driver, bucks, E-stop, wiring and fasteners are unselected and the
+  # 185 g battery is an allowance, not a part.
+  static: 0.15
+  dynamic: 0.12
+  restitution: 0.0
+
+  # PhysX averages the two materials in a contact by default, which would put
+  # half of the decisive number in the ground instead of here — and Stage 4
+  # replaces the ground with a soil heightfield.  "min" keeps this file
+  # authoritative as long as the ground is grippier, which sim/isaac/world.py
+  # guarantees by giving the ground plane a higher coefficient than either
+  # value above.
+  combine_mode: min
+
+collision:
+  # Isaac's default contact offset is 0.02 m, which is 57% of this wheel's
+  # 0.035 m radius — big enough that the wheel would generate contacts well
+  # before it touches.
+  contact_offset_m: 0.004
+  rest_offset_m: 0.0
+
+solver:
+  # Four wheels on one rigid chassis is a small articulation, but the yaw is
+  # sensitive to this: 4 position iterations gave 0.28 deg/s on drive(0, 40),
+  # 16 gave 1.10, 32 gave 1.32, 64 gave 1.75.  32 is where the return flattens
+  # against CI run time.  Velocity iterations stay at 1 — PhysX warns that more
+  # than 4 on a TGS scene changed behaviour.
+  position_iterations: 32
+  velocity_iterations: 1
+
+sleep:
+  # Off, deliberately.  A parked articulation accepts a velocity target and
+  # silently ignores it, which reads exactly like a broken drive — and it bites
+  # hardest when turning on the spot, where the body barely moves.  See the
+  # comment in rover.usd.
+  threshold: 0.0
+  stabilization_threshold: 0.0

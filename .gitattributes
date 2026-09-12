@@ -4,8 +4,9 @@
 # ย้ายทีหลังต้องเขียนประวัติใหม่ทั้ง repo
 #
 # ไม่อยู่ใน LFS โดยเจตนา — ต้องการ diff ที่อ่านได้ตอน review:
-#   cad/parameters/parameters.csv   ที่ที่การเปลี่ยนขนาดจะปรากฏ
-#   cad/urdf/weeding_rover.urdf     links · joints · limits
+#   cad/parameters/parameters.csv        ที่ที่การเปลี่ยนขนาดจะปรากฏ
+#   cad/urdf/weeding_rover.urdf          links · joints · limits
+#   sim/isaac/robots/rover/rover.usd     drive gain · damping · friction
 #
 # sim/isaac/robots/rover/rover_base.usd ไม่ต้องสน — gitignore อยู่แล้ว (generated)
 
@@ -22,3 +23,7 @@
 # USD — scene · rover · asset พืชผล/วัชพืช
 *.usd  filter=lfs diff=lfs merge=lfs -text
 *.usdc filter=lfs diff=lfs merge=lfs -text
+
+# override layer เป็น usda ตัวอักษรล้วน 8 KB และเป็นไฟล์ที่ค่า friction / damping
+# ของ Stage 3 จะปรากฏตอน review — เหตุผลเดียวกับ parameters.csv และ .urdf
+sim/isaac/robots/rover/rover.usd -filter -diff -merge text

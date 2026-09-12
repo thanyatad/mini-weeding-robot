@@ -1,0 +1,187 @@
+#usda 1.0
+(
+    """
+    rover.usd - the committed override layer.
+
+    rover_base.usd below is GENERATED from cad/urdf/weeding_rover.urdf by
+    scripts/import_urdf.sh, and is gitignored.  It is overwritten every time
+    CAD changes.  Everything that the URDF cannot express and that must
+    survive that regeneration is authored HERE:
+
+        joint drive type, stiffness, damping, target velocity
+        wheel/ground friction
+        contact and rest offset
+        articulation solver settings
+
+    Friction is the hardest value in this project to tune.  Losing it to a
+    re-import is the failure this two-layer split exists to prevent - see
+    cad/README.md and cad/urdf/README.md#what-urdf-cannot-hold.
+
+    Every number here is mirrored in config.yaml beside this file, and
+    tests/unit/test_rover_usd_override.py fails if the two disagree.
+
+    NOTHING in this layer may restate geometry, mass or joint origins.  Those
+    belong to the URDF, which tests/unit/test_urdf_matches_cad.py holds to
+    cad/parameters/parameters.csv.  An override here would silently win over
+    CAD and no test would notice.
+    """
+    subLayers = [
+        @./rover_base.usd@
+    ]
+    defaultPrim = "weeding_rover"
+    metersPerUnit = 1
+    kilogramsPerUnit = 1
+    upAxis = "Z"
+)
+
+over "weeding_rover"
+{
+    over "Physics"
+    {
+        def Scope "Materials"
+        {
+            # Bound to the four wheel collision cylinders below.  base_link's
+            # collision box is deliberately left on the default material: it is
+            # not meant to touch the ground, and if it does, that is a
+            # clearance problem to see rather than one to tune away.
+            # frictionCombineMode "min" makes THIS material the only friction
+            # knob in the project.  PhysX averages the two materials in a
+            # contact by default, which would mean the number that decides
+            # whether the rover can turn is half here and half in whatever the
+            # ground happens to be - and Stage 4 replaces the ground with a
+            # soil heightfield.  Taking the minimum keeps the answer here as
+            # long as the ground is grippier, which world.py ensures.
+            def Material "wheel_ground" (
+                prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+            )
+            {
+                float physics:dynamicFriction = 0.12
+                float physics:restitution = 0
+                float physics:staticFriction = 0.15
+                uniform token physxMaterial:frictionCombineMode = "min"
+            }
+        }
+
+        # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
+        # this becomes a position drive and the wheel fights its own target.
+        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # continuous limit) - see config.yaml for why it is not restated here.
+        over "wheel_fl"
+        {
+            uniform token drive:angular:physics:type = "force"
+            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:stiffness = 0
+            float drive:angular:physics:targetVelocity = 0
+        }
+
+        # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
+        # this becomes a position drive and the wheel fights its own target.
+        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # continuous limit) - see config.yaml for why it is not restated here.
+        over "wheel_fr"
+        {
+            uniform token drive:angular:physics:type = "force"
+            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:stiffness = 0
+            float drive:angular:physics:targetVelocity = 0
+        }
+
+        # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
+        # this becomes a position drive and the wheel fights its own target.
+        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # continuous limit) - see config.yaml for why it is not restated here.
+        over "wheel_rl"
+        {
+            uniform token drive:angular:physics:type = "force"
+            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:stiffness = 0
+            float drive:angular:physics:targetVelocity = 0
+        }
+
+        # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
+        # this becomes a position drive and the wheel fights its own target.
+        # maxForce stays where the URDF put it (0.4903 N.m, the gearbox's
+        # continuous limit) - see config.yaml for why it is not restated here.
+        over "wheel_rr"
+        {
+            uniform token drive:angular:physics:type = "force"
+            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:stiffness = 0
+            float drive:angular:physics:targetVelocity = 0
+        }
+
+    }
+
+    over "Geometry"
+    {
+        over "base_link" (
+            prepend apiSchemas = ["PhysxArticulationAPI"]
+        )
+        {
+            bool physxArticulation:enabledSelfCollisions = 0
+            int physxArticulation:solverPositionIterationCount = 32
+            int physxArticulation:solverVelocityIterationCount = 1
+
+            # Sleeping is switched off, and this is a correctness fix rather
+            # than tuning.  PhysX parks a body whose motion falls below the
+            # threshold and stops integrating it; a velocity target sent to a
+            # parked articulation is accepted and silently ignored, so the
+            # wheels read back as exactly 0.0 rad/s.  That is indistinguishable
+            # from a drive that is not working, and it bites hardest in the one
+            # case the rover most needs - turning on the spot, where the body
+            # barely moves.  A rover that ignores a command because it was
+            # holding still is not a rover.
+            float physxRigidBody:sleepThreshold = 0
+            float physxRigidBody:stabilizationThreshold = 0
+
+            over "wheel_fl_link"
+            {
+                over "cylinder" (
+                    prepend apiSchemas = ["PhysxCollisionAPI"]
+                )
+                {
+                    rel material:binding:physics = </weeding_rover/Physics/Materials/wheel_ground>
+                    float physxCollision:contactOffset = 0.004
+                    float physxCollision:restOffset = 0
+                }
+            }
+
+            over "wheel_fr_link"
+            {
+                over "cylinder" (
+                    prepend apiSchemas = ["PhysxCollisionAPI"]
+                )
+                {
+                    rel material:binding:physics = </weeding_rover/Physics/Materials/wheel_ground>
+                    float physxCollision:contactOffset = 0.004
+                    float physxCollision:restOffset = 0
+                }
+            }
+
+            over "wheel_rl_link"
+            {
+                over "cylinder" (
+                    prepend apiSchemas = ["PhysxCollisionAPI"]
+                )
+                {
+                    rel material:binding:physics = </weeding_rover/Physics/Materials/wheel_ground>
+                    float physxCollision:contactOffset = 0.004
+                    float physxCollision:restOffset = 0
+                }
+            }
+
+            over "wheel_rr_link"
+            {
+                over "cylinder" (
+                    prepend apiSchemas = ["PhysxCollisionAPI"]
+                )
+                {
+                    rel material:binding:physics = </weeding_rover/Physics/Materials/wheel_ground>
+                    float physxCollision:contactOffset = 0.004
+                    float physxCollision:restOffset = 0
+                }
+            }
+
+        }
+    }
+}
