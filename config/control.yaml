@@ -10,12 +10,21 @@
 # มุมก้มและความสูงกำหนด lookahead distance ถ้าขยับขายึดกล้อง gain ที่ tune ไว้
 # ใช้ไม่ได้ ต้อง tune ใหม่ ไม่มี test จับข้อนี้ได้
 #
+# ⚠️ 2026-09-12 — lookahead ขยับจาก 180 mm เป็น 713 mm
+#
+#   เดิม  camera_front 180 mm ก้ม 45°  ->  lookahead 180 mm  = 0.9 เท่าของความยาวรถ
+#   ใหม่  camera_front 850 mm ก้ม 50°  ->  lookahead 713 mm  = 1.1 เท่าของความยาวรถ
+#
+# gain สองคู่ด้านล่างเป็น**ค่าเดิมที่ยังไม่ได้ tune กับเรขาคณิตใหม่** — เก็บไว้เป็น
+# จุดตั้งต้นให้ sim สตาร์ตได้เท่านั้น ไม่ใช่คำตอบ ต้อง tune ใหม่ที่ V1 (isaac)
+# และ V4 (esp32) ไม่มี test จับข้อนี้ได้
+#
 # หน่วยของ gain คือ `(deg/s) / unitless` — `RowEstimate` ไม่มีหน่วย mm หรือ deg
 # เพราะกล้องหน้าไม่ calibrate จึงไม่มีสูตรคำนวณ gain จากเรขาคณิต ต้อง tune เท่านั้น
 
 row_follower:
-  v_mm_s: 100
-  omega_max_deg_s: 40
+  v_mm_s: 160
+  omega_max_deg_s: 25
 
   gains:
     fake:  {k_lat: 45.0, k_head: 25.0}

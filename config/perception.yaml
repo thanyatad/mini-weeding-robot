@@ -8,7 +8,10 @@
 # เพราะมันเป็นสมบัติของ mask ที่ ExG ผลิต ถ้า `exg_floor` หรือ asset พืชเปลี่ยน ค่านี้ขยับตาม
 #
 # `max_lateral_error_mm` กำหนดความกว้าง corridor:
-#   corridor = clear_furrow − 2 × max_lateral_error_mm = 290 − 80 = 210 mm
+#   corridor = clear_furrow − 2 × max_lateral_error_mm = 690 − 80 = 610 mm
+#
+# กล้องล่างต้องครอบ corridor + ขอบข้างละ 20 = 650 mm ที่ความสูง 850 mm
+#   HFOV ที่ต้องการ = 2 × atan(325 / 850) = 41.9°  ->  เลนส์ >= 45°
 
 perception:
   loop_hz: 10                  # front camera / control loop

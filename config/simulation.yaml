@@ -25,8 +25,12 @@ simulation:
     bed_length_mm: 2000
     crop_rows: 3
     crop_spacing_mm: 80
-    row_spacing_mm: 350
+    row_spacing_mm: 750
     weed_count: 20
+
+  # row_spacing_mm ต้องตรงกับ bed.row_spacing_mm ใน rover.yaml — ไม่มี invariant
+  # บังคับข้อนี้ (ข้อ 9 บังคับแค่ soil) แต่ถ้าไม่ตรง sim จะสร้างแปลงที่รถลงไม่ได้
+  # แล้ว row follower จะดูเหมือนพัง ทั้งที่เป็นปัญหาของแปลง
 
   randomization:
     enabled: true
