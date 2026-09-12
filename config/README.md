@@ -77,8 +77,14 @@ safety:
   command_timeout_ms: 300
   link_lost_ms: 500
   ack_timeout_ms: 200
-  enable_estop: true
 ```
+
+**ไม่มี `enable_estop`** โดยเจตนา — E-stop ตัด motor rail ทางไฟ (§11.4)
+config key ปิดรีเลย์ไม่ได้ `false` จึงแปลได้อย่างเดียวว่า "ให้ software เมินสาย sense"
+ซึ่งคือ rover ที่หยุดไปแล้วแต่ state machine ยังคิดว่ากำลังวิ่งอยู่
+
+§5.6 บอกว่าแต่ละชั้นต้องทำงานได้โดยไม่พึ่งชั้นบน — ชั้น software จึงไม่ใช่ชั้นที่
+ปิดแล้วยังเรียกว่า safe ได้ สาย sense อ่านโดย `controller/safety/emergency_stop.py` เสมอ
 
 `runaway_budget_mm` คือ **ระยะที่ยอมให้ rover วิ่งต่อหลังเสียการควบคุม**
 MVP ไม่มี bumper switch ค่านี้จึงเป็นตัวชดเชยหลัก
