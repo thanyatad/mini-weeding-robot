@@ -19,7 +19,14 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["controller", "controller.motion", "controller.rover", "perception"]
+packages = [
+    "controller",
+    "controller.motion",
+    "controller.rover",
+    "controller.safety",
+    "controller.workflow",
+    "perception",
+]
 
 [tool.pytest.ini_options]
 # Repo root on sys.path: controller/, perception/ and tests/ are imported as
