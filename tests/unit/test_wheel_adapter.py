@@ -27,9 +27,9 @@ REPO = Path(__file__).resolve().parents[2]
 URDF = REPO / "cad" / "urdf" / "weeding_rover.urdf"
 VECTORS_CSV = CONFIG_DIR / "drive_mixing_vectors.csv"
 
-TRACK_WIDTH_MM = 120.0
-WHEEL_V_MAX_MM_S = 202.0
-WHEEL_RADIUS_MM = 35.0
+TRACK_WIDTH_MM = 430.0
+WHEEL_V_MAX_MM_S = 327.0
+WHEEL_RADIUS_MM = 125.0
 
 #: config/drive_mixing_vectors.csv carries three decimals, so a row is good to
 #: 0.001 mm/s.  tests/unit/test_drive_mixing.py allows 0.01 mm/s against the same
@@ -134,7 +134,7 @@ def _urdf_velocity_limit() -> float:
 
 
 def test_the_urdf_velocity_limit_is_the_wheel_limit_carried_across_the_units():
-    """5.7714 rad/s is 202 mm/s / 35 mm, written to four decimals."""
+    """2.616 rad/s is 327 mm/s / 125 mm, written to four decimals."""
     assert _urdf_velocity_limit() == pytest.approx(round(WHEEL_V_MAX_MM_S / WHEEL_RADIUS_MM, 4))
 
 
@@ -143,9 +143,10 @@ def test_no_vector_exceeds_the_velocity_limit_the_urdf_declares(v, omega, _left,
     """A joint target above the URDF limit is refused by Isaac silently, and the
     omega achieved stops matching the omega commanded.
 
-    The allowance is the URDF's own rounding: 202 / 35 is 5.771428... and the
-    file says 5.7714, so a fully saturated command sits 2.9e-5 rad/s above the
-    declared limit - 5 parts per million of wheel speed, 0.001 mm/s at the rim.
+    The allowance is the URDF's own rounding: 327 / 125 is 2.616 exactly and the
+    file may round it, so a fully saturated command may sit a small amount above
+    the declared limit - the rounding allowance of 0.5e-4 rad/s covers any
+    floating-point representation differences.
     """
     rounding = 0.5e-4
     sides = adapter().wheel_velocities(v, omega)
