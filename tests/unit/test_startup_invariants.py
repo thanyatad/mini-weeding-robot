@@ -67,17 +67,17 @@ class TestSafetyInvariants:
         assert "1000" in message and "100" in message and "60" in message
 
     def test_2_runaway_on_row_loss(self):
-        """v_max x row_loss_frames/loop_hz <= runaway_budget    30 <= 60"""
+        """v_max x row_loss_frames/loop_hz <= runaway_budget    48 <= 60"""
         message = message_for({"safety.row_loss_frames": 10})
         assert "row_loss_frames" in message
         assert "runaway_budget" in message
-        assert "10" in message and "100" in message and "60" in message
+        assert "10" in message and "160" in message and "60" in message
 
     def test_2_fires_when_the_loop_slows_down(self):
         """A slower control loop spends longer blind on the same frame count."""
         message = message_for({"perception.loop_hz": 2})
         assert "loop_hz" in message
-        assert "150" in message and "60" in message
+        assert "240" in message and "60" in message
 
 
 class TestGeometryInvariants:
@@ -91,7 +91,7 @@ class TestGeometryInvariants:
         assert "40" in message and "60" in message and "15" in message
 
     def test_4_chassis_clearance_against_soil(self):
-        """chassis_clearance > soil_variation                   35 > 15"""
+        """chassis_clearance > soil_variation                   125 > 15"""
         message = message_for({"rover.chassis_clearance_mm": 10})
         assert "chassis_clearance" in message
         assert "soil_variation" in message
@@ -104,14 +104,14 @@ class TestGeometryInvariants:
         assert "chassis_clearance" in message
 
     def test_5_clear_furrow_against_body_and_runaway(self):
-        """clear_furrow > body_width + 2 x runaway_budget      290 > 265
+        """clear_furrow > body_width + 2 x runaway_budget      690 > 640
 
         Regression: row_spacing was 250 while drafting, which is what this
         invariant caught."""
         message = message_for({"bed.row_spacing_mm": 250})
         assert "clear_furrow" in message
         assert "body_width" in message
-        assert "190" in message and "265" in message
+        assert "190" in message and "640" in message
 
     def test_5_uses_clear_furrow_and_not_row_spacing(self):
         """Leaves take 30 mm off each side.  An invariant written against
@@ -119,32 +119,33 @@ class TestGeometryInvariants:
         message = message_for({"bed.crop_foliage_half_width_mm": 60})
         assert "clear_furrow" in message
         assert "crop_foliage_half_width" in message
-        assert "230" in message
+        assert "630" in message
 
     def test_5_uses_the_width_over_the_wheels(self):
-        """body_width is the widest point of the rover, 145 mm, not the 140 mm
+        """body_width is the widest point of the rover, 520 mm, not the 340 mm
         chassis plate.  What hits the leaves is the wheels."""
         message = message_for({"bed.row_spacing_mm": 250})
-        assert "145" in message
+        assert "520" in message
 
 
 class TestDriveInvariants:
     def test_6_outer_wheel_against_the_motor_ceiling(self):
-        """v + omega_max_rad x track/2 <= wheel_v_max       141.9 <= 202"""
+        """v + omega_max_rad x track/2 <= wheel_v_max       253.8 <= 327"""
         message = message_for({"rover.drive.wheel_v_max_mm_s": 100})
         assert "wheel_v_max" in message
-        assert "141.9" in message and "100" in message
+        assert "253.8" in message and "100" in message
 
     def test_7_inner_wheel_against_the_motor_deadband(self):
-        """v - omega_max_rad x track/2 >= wheel_v_min        58.1 >= 51
+        """v - omega_max_rad x track/2 >= wheel_v_min        66.2 >= 51
 
-        Regression: omega_max was 60 while drafting.  At 60 the inner wheel
-        lands at 37 mm/s, inside the deadband, where it stops turning while the
-        ESP32 still believes it is driving -- the rover turns harder than
+        Regression: omega_max was 60 while drafting.  At 60 the wider track
+        turns the differential so far past v_max that the inner wheel lands at
+        -65.1 mm/s -- reversing, not just stalling in the deadband -- while the
+        ESP32 still believes it is driving forward: the rover turns harder than
         commanded with nothing to signal it."""
         message = message_for({"rover.drive.omega_max_deg_s": 60})
         assert "wheel_v_min" in message
-        assert "37.2" in message and "51" in message
+        assert "-65.1" in message and "51" in message
 
     def test_7_says_not_to_relax_the_deadband_to_pass(self):
         """wheel_v_min is a property of the motor, to be measured at V3.  A
@@ -155,7 +156,7 @@ class TestDriveInvariants:
 
     def test_6_and_7_use_the_configured_track_width(self):
         message = message_for({"rover.drive.omega_max_deg_s": 60})
-        assert "120" in message
+        assert "430" in message
 
 
 class TestConfigInvariants:
@@ -201,28 +202,34 @@ class TestRegressionValues:
     def test_invariant_rejects_bad_config(self, override, expect_in_message):
         assert expect_in_message in message_for(override)
 
-    def test_track_width_140_passes_but_with_almost_no_margin(self):
-        """The fourth drafted value, and the odd one out: track_width 140 does
-        not break an invariant, it nearly does.
+    def test_the_shipped_geometry_keeps_a_real_margin(self):
+        """The two margins that matter, at the shipped numbers.
 
-        With body_width following the track (140 + 26 mm of tyre = 166), the
-        clear-furrow margin drops from 24 mm to 4 mm, and the inner wheel lands
-        0.1 mm/s above the deadband instead of 7.1.  Both still pass, which is
-        why the reason for going to 120 is recorded in cad/parameters/README.md
-        rather than enforced here -- and why this test asserts the margins
-        rather than a failure that does not happen.
+        clear_furrow is now the binding constraint of the whole machine — the
+        520 mm body spends 640 of the 690 mm the 750 mm row leaves.  Ø250
+        wheels retired wheel_clears_soil, which used to be the tight one.
+
+        wheel_v_min's 15.19 mm/s is better than the 7.11 the small rover had,
+        and it is better on purpose: v_max was set to 160 rather than 150 to
+        buy it, because wheel_v_min is still an unmeasured 15%-duty estimate.
         """
-        config = config_with({"rover.track_width_mm": 140, "rover.body_width_mm": 166})
-        startup_checks.run(config)
-
-        margins = startup_checks.margins(config)
-        assert margins["clear_furrow"] == pytest.approx(4.0)
-        assert margins["wheel_v_min"] == pytest.approx(0.13, abs=0.01)
-
-    def test_the_shipped_track_width_keeps_a_real_margin(self):
         margins = startup_checks.margins(load_config())
-        assert margins["clear_furrow"] == pytest.approx(25.0)
-        assert margins["wheel_v_min"] == pytest.approx(7.11, abs=0.01)
+        assert margins["clear_furrow"] == pytest.approx(50.0)
+        assert margins["wheel_v_min"] == pytest.approx(15.19, abs=0.01)
+
+    def test_raising_foliage_width_past_55_breaks_the_furrow(self):
+        """The margin above is spent on a number nobody has measured.
+
+        crop_foliage_half_width_mm is 30 by assumption, to be measured against
+        the plant asset at V1.  At 55 the furrow no longer fits the rover, and
+        row_spacing has to go to 800+ — which is a decision about what the
+        customer plants, not a config edit.
+        """
+        config = load_config()
+        config["bed"]["crop_foliage_half_width_mm"] = 55
+        with pytest.raises(startup_checks.ConfigInvalid) as failure:
+            startup_checks.run(config)
+        assert "clear_furrow" in str(failure.value) or "640" in str(failure.value)
 
 
 class TestMessageQuality:
