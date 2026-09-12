@@ -4,6 +4,9 @@
 # สีดินที่เปลี่ยนตามความชื้นเอง แต่เมื่อไม่มีสีเขียวในเฟรมเลย Otsu จะแบ่ง noise
 # ออกเป็นสองกองแล้วคืน mask ที่ดูเหมือนมีพืช `exg_floor` เป็นพื้นกันข้อนี้
 #
+# `green_fraction_row_end` คือเส้นที่แยก `row_end` ออกจาก `row_lost` (§5.4) — อยู่ที่นี่
+# เพราะมันเป็นสมบัติของ mask ที่ ExG ผลิต ถ้า `exg_floor` หรือ asset พืชเปลี่ยน ค่านี้ขยับตาม
+#
 # `max_lateral_error_mm` กำหนดความกว้าง corridor:
 #   corridor = clear_furrow − 2 × max_lateral_error_mm = 290 − 80 = 210 mm
 
@@ -16,6 +19,7 @@ perception:
 
   row_estimator:
     conf_min: 0.25             # valley prominence ขั้นต่ำ
+    green_fraction_row_end: 0.10   # สมมติฐาน — ยังไม่ถูก validate ต้องวัดที่ V1
     front_downscale: [320, 240]
 
   weed_detector:

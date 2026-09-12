@@ -102,6 +102,7 @@ perception:
 
   row_estimator:
     conf_min: 0.25             # valley prominence ขั้นต่ำ
+    green_fraction_row_end: 0.10   # สมมติฐาน — ต้องวัดที่ V1
     front_downscale: [320, 240]
 
   weed_detector:
@@ -119,6 +120,29 @@ ExG threshold ใช้ **Otsu ต่อเฟรม** ไม่ใช่ค่�
 
 `exg_floor` เป็นพื้นที่กันข้อนี้ — ต้องมี unit test ป้อนภาพดินเปล่า
 ยืนยันว่าได้ mask ว่าง
+
+### `green_fraction_row_end` แยก `row_end` ออกจาก `row_lost`
+
+ทั้งสองกรณีมาถึงเหมือนกันเป๊ะ — estimate invalid ติดกัน `row_loss_frames` เฟรม
+ตัวแยกมีตัวเดียวคือ `green_fraction` ของเฟรมที่ทำให้ watchdog trip (§5.4):
+
+```text
+green_fraction <  0.10    เขียวหมดจากเฟรม      สุดร่อง   → STOPPED(row_end_suspected)
+green_fraction >= 0.10    ยังเห็นเขียวแต่ไม่มีเส้น  nav พลาด  → ERROR(row_lost)
+```
+
+อยู่ใน `perception.yaml` ไม่ใช่ `safety.yaml` เพราะมันเป็นสมบัติของ **mask ที่ ExG ผลิต**
+ไม่ใช่ของ watchdog — ถ้า `exg_floor` เปลี่ยน หรือ asset พืชเปลี่ยน ค่านี้ต้องขยับตาม
+การวางไว้ข้าง `exg_floor` ทำให้คนที่ tune ExG เห็นว่ามีค่านี้ผูกอยู่
+
+⚠️ **`0.10` ยังไม่ถูก validate** — เป็นสมมติฐานแบบเดียวกับ `max_lateral_error_mm`
+V0 พิสูจน์ได้แค่ว่า *ตรรกะ* เปรียบเทียบถูกและ watchdog นับถูก เพราะ harness
+ไม่มี pixel และไม่มีต้นพืช การยืนยันว่าเส้นนี้แยกช่องว่างกลางแถวออกจากสุดร่อง
+ได้จริงต้องใช้ภาพ render — คือ `crop_gap_midrow.yaml` กับ `row_end.yaml` ที่ V1
+**ต้องผ่านทั้งคู่** ผ่านข้างเดียวแปลว่าตั้งเอาใจข้างเดียว
+
+กรณีเท่ากับ threshold พอดีนับเป็น `row_lost` — nav ที่พลาดแล้วถูกบันทึกว่าจบร่องปกติ
+คือทิศที่กลบปัญหา ส่วนทิศกลับกันแค่เรียกคนมาดู
 
 ### `max_lateral_error_mm` กำหนดความกว้าง corridor
 
