@@ -13,8 +13,8 @@ in simulation and correctly on hardware, or the reverse.  So this module calls
 
     mm/s    -> rad/s    v_side / wheel_radius
     deg/s   -> rad/s    inside mix(), which takes degrees
-    mm      -> m        the wheel radius: config says 70 mm diameter, the URDF
-                        collision cylinder says 0.035 m.  They must agree.
+    mm      -> m        the wheel radius: config says 250 mm diameter, the URDF
+                        collision cylinder says 0.125 m.  They must agree.
 
 Both wheels on a side get one value.  The real rover wires its two motors per
 side in parallel, so front and rear cannot be commanded apart; emitting a

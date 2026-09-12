@@ -229,7 +229,7 @@ wheel_v_max = (motor_rpm / 60) × pi × wheel_diameter_mm
 ```
 
 `motor_rpm = 25` มาจาก [`hardware/bom/poc-v3.md`](../../hardware/bom/poc-v3.md)
-(หน้าต่างความเร็วที่ใช้ได้คือ 18.6–28.6 RPM บีบจาก invariant ข้อ 6 และ 7) —
+(หน้าต่างความเร็วที่ใช้ได้คือ 19.4–33.7 RPM บีบจาก invariant ข้อ 6 และ 7) —
 **ไม่ใช่จาก CAD** `test_the_bom_still_states_the_motor_speed` และ
 `test_wheel_v_max_follows_from_wheel_diameter_and_motor_rpm` บังคับทั้งค่าและสูตรนี้
 
@@ -263,7 +263,7 @@ drive     v − omega_max_rad × track/2  >= wheel_v_min                 66.2 >=
 
 | ต้องยืนยัน | ที่ไหน | ถ้าผิดแล้วเกิดอะไร |
 |---|---|---|
-| `motor_rpm` ~25 (หน้าต่าง 18.6–28.6 RPM) | ก่อนสั่งมอเตอร์ | นอกหน้าต่างนี้ทำให้ invariant ข้อ 6 (ล้อนอกเกิน `wheel_v_max`) หรือข้อ 7 (ล้อในต่ำกว่า deadband) ไม่ผ่าน |
+| `motor_rpm` ~25 (หน้าต่าง 19.4–33.7 RPM) | ก่อนสั่งมอเตอร์ | นอกหน้าต่างนี้ทำให้ invariant ข้อ 6 (ล้อนอกเกิน `wheel_v_max`) หรือข้อ 7 (ล้อในต่ำกว่า deadband) ไม่ผ่าน |
 | `wheel_v_min` ที่วัดได้ (V3) — ต้อง ≤ 66.2 mm/s | V3 | เกินแล้วต้องลด `omega_max_deg_s` ห้ามลด `wheel_v_min` |
 | FOV กล้องล่าง >= 45° ที่ 850 mm | ก่อนสั่งกล้อง | เห็นร่องไม่ครบ ใบพืชผลไม่แตะขอบเฟรม → นับเป็นวัชพืช |
 | `crop_foliage_half_width_mm` **< 55 mm** | V1 (asset พืช) | ถ้า V1 วัดได้ 55+ ต้องขยับ `row_spacing_mm` เป็น 800+ — กระทบทั้ง invariant ข้อ 5 และ corridor พร้อมกัน |

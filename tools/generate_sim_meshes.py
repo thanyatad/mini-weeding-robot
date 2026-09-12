@@ -32,7 +32,9 @@ WHEEL_SEGMENTS = 32
 #: body_width is the overall width including the wheels, and the shell is
 #: narrower than that.  Design spec section 3.2 draws the body as
 #: 500 x 380 x 280, and section 9.2 specifies the URDF's upper collision box
-#: as 0.500 x 0.380 x 0.155.  MASS_ITEMS models the shell at the same 380.
+#: as 0.500 x 0.380 x 0.155.  MASS_ITEMS below derives the shell row's width
+#: from this constant, so the two cannot drift apart the way the URDF's
+#: separately-typed 0.380 literal can.
 BODY_SHELL_WIDTH_MM = 380.0
 
 
@@ -142,7 +144,7 @@ MASS_ITEMS: tuple[
     ("battery", 5.0, (300, 200, 120), (0, 0, 190)),
     ("power_box", 1.5, (200, 150, 80), (-150, 0, 300)),
     ("compute", 1.5, (200, 150, 80), (150, 0, 300)),
-    ("shell", 3.0, (500, 380, 155), (0, 0, 327.5)),
+    ("shell", 3.0, (500, BODY_SHELL_WIDTH_MM, 155), (0, 0, 327.5)),
     ("motors", 6.0, (400, 300, 100), (0, 0, 125)),
     ("fasteners", 1.1, (500, 340, 125), (0, 0, 187.5)),
 )

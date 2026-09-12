@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from controller.config import get, load_config
+from tools.generate_sim_meshes import BODY_SHELL_WIDTH_MM, mass_properties
 
 REPO = Path(__file__).resolve().parents[2]
 URDF = REPO / "cad" / "urdf" / "weeding_rover.urdf"
@@ -200,11 +201,16 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
     boxes rather than one.  A test that only counted primitives and checked
     the lower box's clearance would let a future edit widen or shrink the
     upper box to the wheel-clearing width and still pass, silently flattening
-    the body back down to the frame width.  So the box that does *not* reach
-    below the wheel tops must be asserted wider than the wheel inner faces,
-    not merely left unchecked.  The mast cylinder gets the same treatment as
-    test_wheel_collision_is_a_cylinder_sized_from_cad: its radius, length, and
-    height are checked against CAD, not just its shape and count.
+    the body back down to the frame width.  So the box above the wheel tops is
+    asserted equal to BODY_SHELL_WIDTH_MM (tools/generate_sim_meshes.py) --
+    the source that constant's own docstring claims the URDF's literal
+    tracks -- not merely wider than the wheel inner faces, which a stale
+    literal could still satisfy by accident.  The mast cylinder gets the same
+    treatment as test_wheel_collision_is_a_cylinder_sized_from_cad: its
+    radius, length, and height are checked against CAD, not just its shape
+    and count.  Both boxes' length (the dimension along the direction of
+    travel, discarded by earlier versions of this test) is checked against
+    body_length_mm too.
 
     cad/urdf/README.md#collision still holds: primitives only.
     """
@@ -224,8 +230,8 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
         )
         _, _, z = _xyz(collision.find("origin"))
         if box is not None:
-            _, width, height = (float(v) for v in box.get("size").split())
-            boxes.append((z - height / 2, z + height / 2, width))
+            length, width, height = (float(v) for v in box.get("size").split())
+            boxes.append((z - height / 2, z + height / 2, width, length))
         else:
             cylinders.append((cylinder, z))
 
@@ -234,17 +240,27 @@ def test_base_link_collision_is_boxes_that_clear_the_wheels():
 
     wheel_top = cad["wheel_diameter_mm"] / MM_PER_M
     inner_faces = (cad["track_width_mm"] - cad["wheel_width_mm"]) / MM_PER_M
-    for bottom, _top, width in boxes:
+    expected_length = cad["body_length_mm"] / MM_PER_M
+    shell_width = BODY_SHELL_WIDTH_MM / MM_PER_M
+    for bottom, _top, width, length in boxes:
+        assert length == pytest.approx(expected_length, abs=1e-9), (
+            f"a collision box is {length * MM_PER_M:.0f} mm long, but "
+            f"body_length_mm is {cad['body_length_mm']:.0f} mm"
+        )
         if bottom < wheel_top - 1e-9:
             assert width <= inner_faces + 1e-9, (
                 f"a collision box {width * MM_PER_M:.0f} mm wide reaches below the "
                 f"wheel tops, where only {inner_faces * MM_PER_M:.0f} mm fits"
             )
         else:
-            assert width > inner_faces + 1e-9, (
-                f"the box above the wheel tops is {width * MM_PER_M:.0f} mm wide, no "
-                f"wider than the {inner_faces * MM_PER_M:.0f} mm wheel inner faces - it "
-                "no longer overhangs, so a single box could describe the whole shape"
+            # Equals, not merely "wider than the wheels": this is the box that
+            # carries tools.generate_sim_meshes.BODY_SHELL_WIDTH_MM, and the
+            # URDF's literal 0.380 must track that constant rather than just
+            # clear the wheels by some margin.
+            assert width == pytest.approx(shell_width, abs=1e-9), (
+                f"the box above the wheel tops is {width * MM_PER_M:.0f} mm wide, "
+                f"but BODY_SHELL_WIDTH_MM (tools/generate_sim_meshes.py) is "
+                f"{BODY_SHELL_WIDTH_MM:.0f} mm"
             )
         assert bottom >= cad["chassis_clearance_mm"] / MM_PER_M - 1e-9, (
             f"a collision box bottom at {bottom * MM_PER_M:.0f} mm is below the belly "
@@ -353,3 +369,51 @@ def test_total_mass_is_under_the_gearbox_ceiling():
         if link.find("inertial") is not None
     )
     assert total <= 40.0, f"URDF total mass {total:.3f} kg exceeds the 40 kg ceiling"
+
+
+@pytest.mark.parametrize(
+    "link_name,model_key",
+    [("base_link", "base_link"), ("wheel_fl_link", "wheel")],
+)
+def test_urdf_inertial_matches_the_mass_model(link_name, model_key):
+    """The <inertial> blocks were pasted from
+    ``python tools/generate_sim_meshes.py --print-inertia`` (see the block
+    comment at the top of this URDF), but nothing kept them pinned there.
+    Change wheel_width_mm and the wheel's ixx/izz go stale silently -- the
+    only thing test_total_mass_is_under_the_gearbox_ceiling checks is the sum
+    of masses, and every individual mass is still exactly right while the
+    inertias it is paired with are not.
+
+    Tolerances match the precision --print-inertia writes: mass to 6 decimal
+    places, the origin to 5, the inertia diagonal to 9.  If this fails, re-run
+    ``python tools/generate_sim_meshes.py --print-inertia`` and paste the
+    result for the failing link into cad/urdf/weeding_rover.urdf.
+    """
+    expected = mass_properties()[model_key]
+
+    inertial = _link(link_name).find("inertial")
+    assert inertial is not None, f"{link_name} has no <inertial> block"
+
+    mass = float(inertial.find("mass").get("value"))
+    origin = _xyz(inertial.find("origin"))
+    inertia = inertial.find("inertia")
+
+    assert mass == pytest.approx(expected.mass, abs=1e-6), (
+        f'{link_name} <mass value="{mass}"/> != '
+        f"{expected.mass:.6f} from generate_sim_meshes.mass_properties()"
+    )
+    for axis, (actual, want) in enumerate(zip(origin, expected.com, strict=True)):
+        assert actual == pytest.approx(want, abs=1e-5), (
+            f"{link_name} <inertial><origin> axis {axis} is {actual} but "
+            f"mass_properties() gives {want:.5f}"
+        )
+    for name, want in (
+        ("ixx", expected.ixx),
+        ("iyy", expected.iyy),
+        ("izz", expected.izz),
+    ):
+        actual = float(inertia.get(name))
+        assert actual == pytest.approx(want, abs=5e-9), (
+            f'{link_name} <inertia {name}="{actual}"/> != {want:.9f} from '
+            "generate_sim_meshes.mass_properties()"
+        )

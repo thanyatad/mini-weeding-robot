@@ -13,8 +13,8 @@
 # are simulator-side physics values with no counterpart on the real rover.
 #
 # ⚠️ UNITS.  UsdPhysics authors ANGULAR drives in DEGREES, not radians:
-# rover_base.usd carries `physxJoint:maxJointVelocity = 330.67688`, which is
-# the URDF's 5.7714 rad/s written as deg/s.  So `damping` below is N·m·s/deg.
+# rover_base.usd carries `physxJoint:maxJointVelocity = 149.88576`, which is
+# the URDF's 2.616 rad/s written as deg/s.  So `damping` below is N·m·s/deg.
 # The Python side commands rad/s and isaacsim.core converts — the boundary is
 # sim/isaac/adapters/wheel_adapter.py and it is unit-tested.
 

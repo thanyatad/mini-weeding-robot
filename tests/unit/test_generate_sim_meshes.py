@@ -92,6 +92,49 @@ def test_the_stl_and_the_obj_describe_the_same_solid(tmp_path, cad):
         assert max(p[axis] for p in stl) == pytest.approx(max(p[axis] for p in obj), abs=1e-9)
 
 
+def _normalise(text: str) -> str:
+    """Strip CRLF differences so a Windows checkout cannot fail this test on
+    line endings alone -- the comparison below is about content, not bytes."""
+    return text.replace("\r\n", "\n")
+
+
+def test_the_committed_meshes_match_the_generator(tmp_path):
+    """The module docstring's promise -- "run the script, and the mesh is the
+    CSV" -- rests entirely on this test.  Every test above generates into
+    tmp_path and inspects the fresh output only; none of them ever reads
+    cad/urdf/meshes/ or cad/exports/meshes/.  Change body_length_mm, forget to
+    run the script, and the rest of this file stays green while Isaac loads a
+    rover of the old length from the committed meshes.
+
+    This regenerates into tmp_path and compares each committed file, text
+    normalised, against that fresh output -- all six: base_link.obj and
+    wheel.obj under both cad/urdf/meshes/ and cad/exports/meshes/, plus
+    base_link.stl and wheel.stl under cad/exports/meshes/.
+    """
+    gen.main(REPO, out_dirs=[tmp_path], stl_dirs=[tmp_path])
+
+    committed_dirs = {
+        REPO / "cad" / "urdf" / "meshes": ("base_link.obj", "wheel.obj"),
+        REPO / "cad" / "exports" / "meshes": (
+            "base_link.obj",
+            "wheel.obj",
+            "base_link.stl",
+            "wheel.stl",
+        ),
+    }
+
+    for directory, names in committed_dirs.items():
+        for name in names:
+            committed = _normalise((directory / name).read_text(encoding="utf-8"))
+            fresh = _normalise((tmp_path / name).read_text(encoding="utf-8"))
+            assert committed == fresh, (
+                f"{directory / name} does not match what "
+                "tools/generate_sim_meshes.py generates from the current "
+                "cad/parameters/parameters.csv -- run "
+                "`python tools/generate_sim_meshes.py` and commit the result"
+            )
+
+
 def test_total_mass_matches_the_bom():
     properties = gen.mass_properties()
     total = properties["base_link"].mass + 4 * properties["wheel"].mass

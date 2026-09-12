@@ -19,6 +19,7 @@ Three things can go wrong and none of them raise:
 No Isaac needed: rover.usd is ASCII usda and is read as text.
 """
 
+import csv
 import re
 import subprocess
 from pathlib import Path
@@ -30,8 +31,22 @@ REPO = Path(__file__).resolve().parents[2]
 ROVER_DIR = REPO / "sim" / "isaac" / "robots" / "rover"
 ROVER_USD = ROVER_DIR / "rover.usd"
 CONFIG_YAML = ROVER_DIR / "config.yaml"
+PARAMETERS_CSV = REPO / "cad" / "parameters" / "parameters.csv"
 
 WHEELS = ("wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr")
+
+
+def _wheel_radius_m() -> float:
+    """Wheel radius in metres, read from the CAD table the same way
+    tests/unit/test_urdf_matches_cad.py does -- so this stays tied to the
+    current wheel instead of a number frozen at whatever it used to be."""
+    lines = [
+        line
+        for line in PARAMETERS_CSV.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    cad = {row["name"]: float(row["value"]) for row in csv.DictReader(lines)}
+    return cad["wheel_diameter_mm"] / 2 / 1000.0
 
 
 @pytest.fixture(scope="module")
@@ -129,9 +144,11 @@ def test_the_drive_type_is_authored_for_every_wheel(usd):
 
 
 def test_max_force_is_left_to_the_urdf(usd):
-    """It is the gearbox's continuous torque limit and it comes from
-    <limit effort=...>.  Restating it here would put a BOM number in two
-    places, which is the drift the two-layer split exists to prevent."""
+    """It is the gearbox's PEAK/stall torque limit and it comes from
+    <limit effort=...>.  Continuous is 5 N.m per wheel (hardware/bom/poc-v3.md)
+    and is what the 40 kg mass ceiling rests on.  Restating it here would put
+    a BOM number in two places, which is the drift the two-layer split exists
+    to prevent."""
     assert "drive:angular:physics:maxForce" not in usd
 
 
@@ -167,10 +184,16 @@ def test_contact_offsets_match_config_yaml(usd, physics):
     assert values(usd, "physxCollision:restOffset") == [collision["rest_offset_m"]] * len(WHEELS)
 
 
-def test_the_contact_offset_is_small_against_the_wheel(usd, physics):
-    """Isaac's default is 0.02 m, which is 57% of this wheel's 0.035 m radius -
-    big enough that the wheel makes contacts well before it touches."""
-    assert physics["collision"]["contact_offset_m"] < 0.035 / 2
+def test_the_contact_offset_is_small_against_the_wheel(physics):
+    """Isaac's default contact offset is 0.02 m.  sim/isaac/robots/rover/
+    config.yaml:74-81 spells out what that is against this wheel: 16% of the
+    current 0.125 m radius (down from 57% of the old 0.035 m one, still large
+    enough to want overriding).  The configured 0.004 m is held at its
+    absolute value rather than as a ratio -- 11% of the old radius, 3.2% of
+    this one -- and this test is the check that it stays a small fraction of
+    whatever the wheel currently is, read from the CAD table rather than
+    hardcoded."""
+    assert physics["collision"]["contact_offset_m"] < _wheel_radius_m() / 2
 
 
 # -- solver and sleep ------------------------------------------------------
