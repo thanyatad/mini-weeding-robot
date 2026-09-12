@@ -1,0 +1,243 @@
+<?xml version="1.0"?>
+<!--
+  weeding_rover - generated from cad/fusion/rover.f3d
+
+  Frames follow hardware/mechanical/coordinate-frames.md: base_link sits at the
+  centre of the rover on the soil reference plane, X forward, Y left, Z up.
+  A positive wheel joint velocity about +Y drives that wheel forward, so
+  omega > 0 (v_right > v_left) is a left turn, CCW with Z up.
+
+  Units are metres and radians.  config/*.yaml is millimetres and degrees -
+  this file is one of the only two places that conversion happens.
+
+  Meshes under meshes/ are authored in metres, so no scale factor is applied.
+  Collision is primitives only, per cad/urdf/README.md#collision: a box for
+  base_link and cylinders for the wheels.  The wheels must NOT use a mesh - a
+  tread mesh on a heightfield makes a very large number of contact points and
+  buys no accuracy, because grip comes from the friction coefficient set in
+  sim/isaac/robots/rover/rover.usd.
+
+  Mass properties are Fusion's, with vendor part densities back-solved from the
+  published weights of Pololu #3482 / #3272 / #2672 / #1138 and the Raspberry
+  Pi 5.  Total 1.038 kg against the 2.3 kg ceiling.
+-->
+<robot name="weeding_rover">
+
+  <!-- ================================================================== -->
+  <!-- base_link                                                          -->
+  <!-- ================================================================== -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.00507 0.00000 0.06254" rpy="0 0 0"/>
+      <mass value="0.729560"/>
+      <inertia ixx="0.001848115" ixy="0.000000000" ixz="0.000141073"
+                                 iyy="0.003755594" iyz="-0.000000034"
+                                                   izz="0.002754141"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/base_link.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <!-- box spanning the motors at z = 0.025 up to the camera arm at
+           0.2345, 200 x 140 mm in plan -->
+      <origin xyz="0 0 0.12975" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.200 0.140 0.209500"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ================================================================== -->
+  <!-- wheels - four continuous joints, star topology off base_link       -->
+  <!--                                                                    -->
+  <!-- origin  x = +/- wheelbase/2      = +/- 0.060                       -->
+  <!--         y = +/- track_width/2    = +/- 0.060                       -->
+  <!--         z =     wheel_diameter/2 =     0.035  (axle on the ground  -->
+  <!--                 plane + the wheel radius, measured in the assembly)-->
+  <!-- velocity 202 mm/s / 35 mm        = 5.7714 rad/s                    -->
+  <!-- effort   5 kg.cm gearbox continuous limit = 0.4903 N.m             -->
+  <!-- ================================================================== -->
+
+  <link name="wheel_fl_link">
+    <inertial>
+      <origin xyz="-0.00006 0.00003 0.00000" rpy="0 0 0"/>
+      <mass value="0.075100"/>
+      <inertia ixx="0.000023933" ixy="0.000000000" ixz="0.000000000"
+                                 iyy="0.000041238" iyz="0.000000000"
+                                                   izz="0.000023903"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/wheel.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963268 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.025"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="wheel_fl" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_fl_link"/>
+    <origin xyz="0.060 0.060 0.035" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.4903" velocity="5.7714"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <link name="wheel_fr_link">
+    <inertial>
+      <origin xyz="-0.00006 -0.00003 0.00000" rpy="0 0 0"/>
+      <mass value="0.075100"/>
+      <inertia ixx="0.000023933" ixy="0.000000000" ixz="0.000000000"
+                                 iyy="0.000041238" iyz="0.000000000"
+                                                   izz="0.000023903"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/wheel.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963268 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.025"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="wheel_fr" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_fr_link"/>
+    <origin xyz="0.060 -0.060 0.035" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.4903" velocity="5.7714"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <link name="wheel_rl_link">
+    <inertial>
+      <origin xyz="-0.00006 0.00003 0.00000" rpy="0 0 0"/>
+      <mass value="0.075100"/>
+      <inertia ixx="0.000023933" ixy="0.000000000" ixz="0.000000000"
+                                 iyy="0.000041238" iyz="0.000000000"
+                                                   izz="0.000023903"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/wheel.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963268 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.025"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="wheel_rl" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_rl_link"/>
+    <origin xyz="-0.060 0.060 0.035" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.4903" velocity="5.7714"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <link name="wheel_rr_link">
+    <inertial>
+      <origin xyz="-0.00006 -0.00003 0.00000" rpy="0 0 0"/>
+      <mass value="0.075100"/>
+      <inertia ixx="0.000023933" ixy="0.000000000" ixz="0.000000000"
+                                 iyy="0.000041238" iyz="0.000000000"
+                                                   izz="0.000023903"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/wheel.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963268 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.025"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="wheel_rr" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_rr_link"/>
+    <origin xyz="-0.060 -0.060 0.035" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0.4903" velocity="5.7714"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- cameras - fixed joints, OpenCV optical frames (X right in image,   -->
+  <!-- Y down in image, Z out of the lens)                                -->
+  <!--                                                                    -->
+  <!-- camera_front  x 0.090, z 0.180, pitched 45 deg down                -->
+  <!--    DO NOT MOVE: height and tilt set the row follower's lookahead   -->
+  <!--    (180 mm) and therefore its gain.  There is no formula from      -->
+  <!--    geometry to gain and no test that catches a change.             -->
+  <!-- camera_down   x 0,     z 0.220, looking straight down              -->
+  <!--    the 66 deg HFOV corridor coverage calculation depends on 0.220  -->
+  <!-- ================================================================== -->
+  <link name="camera_front_link">
+    <inertial>
+      <origin xyz="0 0 -0.00575" rpy="0 0 0"/>
+      <mass value="0.004000"/>
+      <inertia ixx="0.000000236" ixy="0.0" ixz="0.0"
+                                 iyy="0.000000252" iyz="0.0"
+                                                   izz="0.000000400"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.00575" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.024 0.0115"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="camera_front" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_front_link"/>
+    <origin xyz="0.090 0 0.180" rpy="-2.3561944902 0 -1.5707963268"/>
+  </joint>
+
+  <link name="camera_down_link">
+    <inertial>
+      <origin xyz="0 0 -0.00575" rpy="0 0 0"/>
+      <mass value="0.004000"/>
+      <inertia ixx="0.000000236" ixy="0.0" ixz="0.0"
+                                 iyy="0.000000252" iyz="0.0"
+                                                   izz="0.000000400"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.00575" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.024 0.0115"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="camera_down" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_down_link"/>
+    <origin xyz="0 0 0.220" rpy="3.1415926536 0 -1.5707963268"/>
+  </joint>
+
+</robot>
