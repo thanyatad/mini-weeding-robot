@@ -23,7 +23,32 @@ wheel_drive:
   # stiffness behaves like a position drive, and the wheels fight the target
   # instead of holding it.
   stiffness_n_m_per_deg: 0.0
-  damping_n_m_s_per_deg: 0.005
+
+  # damping is the motor's TORQUE/SPEED SLOPE, and on a velocity drive with no
+  # stiffness it is the only thing that sets how much torque the drive may ask
+  # for: torque = damping x (target - actual), clamped by max_force.  So it is
+  # damping, not max_force, that decides whether the wheel can turn at all.
+  #
+  # Derived, not tuned.  The URDF's <limit effort="10.0" velocity="2.616"/> is
+  # the gearbox's stall torque and the wheel's no-load speed, and
+  #
+  #     10.0 N·m / (2.616 rad/s = 149.886 deg/s) = 0.0667 N·m·s/deg
+  #
+  # is the straight line between them, which is a geared DC motor's
+  # characteristic: full stall torque at zero speed under full command, zero
+  # torque at no-load speed.  Both numbers already live in the URDF, so this
+  # has a source rather than a taste.
+  #
+  # It was 0.005 until Stage 2 measured it, and that number came off the
+  # 1.038 kg rover along with the friction table below.  At 0.005 the drive
+  # saturates at 0.005 x 68.8 deg/s = 0.34 N·m, and a 35 kg skid-steer needs
+  # ~0.92 N·m per wheel to scrub its wheels round.  So EVERY turning command
+  # left all four wheels at exactly 0.000 rad/s with the drive pinned at its
+  # 0.34 N·m ceiling -- 10 N·m of max_force buys nothing when the drive never
+  # asks for more than a third of a newton-metre.  Straight-line driving kept
+  # working, because rolling needs almost no torque, and that is what made it
+  # look like a turning problem instead of a drive problem.
+  damping_n_m_s_per_deg: 0.0667
 
   # max_force is NOT authored here on purpose.  It is the gearbox's PEAK/stall
   # torque limit (10 N·m) -- NOT the continuous limit, which is 5 N·m per

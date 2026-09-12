@@ -107,32 +107,39 @@ def test_drive_100_0_drives_straight_at_about_100_mm_s(sim):
 def test_drive_0_40_turns_on_the_spot(sim):
     """On the spot means it yaws in the commanded direction without travelling.
 
-    The threshold is 0.5 deg/s against a commanded 40, which is not a typo and
-    not a generous tolerance - it is the measured behaviour.  See the xfail
-    below, which is where that gap is recorded rather than hidden here.
+    The threshold is 5 deg/s against a commanded 40, well under the 15.9
+    measured, because how MUCH of the commanded yaw arrives is the xfail
+    below - this one only asks that the rover turns the way it was told and
+    stays put while doing it.  It read 0.5 while the drive was too weak to
+    break the wheels loose at all; a bar that low would pass a rover that
+    barely twitches.
     """
     result = run(sim, 0.0, 40.0)
-    assert result["omega_deg_s"] > 0.5, "commanded a left turn and it did not yaw left"
+    assert result["omega_deg_s"] > 5.0, "commanded a left turn and it did not yaw left"
     assert result["speed_mm_s"] < 20.0, "turning on the spot should not travel"
 
 
 @pytest.mark.xfail(
     strict=False,
-    reason="Stage 3: skid-steer yaw reaches only a few percent of nominal on flat "
-    "ground.  Not a sign or unit fault - the wheels hold their commanded speed to "
-    "0.5% and the drive uses a small fraction of the 10 N.m it is allowed.  Friction is "
-    "not the knob either: 0.15 -> 0.02 moves it 1.10 -> 1.57 deg/s.  See "
+    reason="Stage 3: skid-steer yaw reaches about 40% of nominal on flat ground - "
+    "15.9 deg/s measured against a commanded 40.  Not a sign or unit fault, and no "
+    "longer a torque fault either: the wheels hold their commanded speed to within "
+    "1% and the drive peaks at ~1.1 of the 10 N.m it is allowed, so what is left is "
+    "the contact model.  Friction is not the knob - that was tested on the previous "
+    "rover and lowering it 45x moved the yaw barely at all.  See "
     "sim/isaac/robots/rover/config.yaml.",
 )
 def test_drive_0_40_should_reach_a_usable_fraction_of_the_commanded_yaw(sim):
     """The gap between what the mixing commands and what the contact delivers.
 
     Slip means the achieved omega is never the commanded one - the row follower
-    closes its loop on the image precisely because of that.  But a few percent
-    is not slip, it is a rover that cannot steer, and leaving this as a passing
-    test with a lowered bar would bury the single most important thing Stage 2
-    found.  It is xfail rather than deleted so that the day Stage 3 fixes the
-    contact model, this turns green and says so.
+    closes its loop on the image precisely because of that.  40% is slip and a
+    rover that steers; the few percent this used to read was a rover that could
+    not steer at all, and it turned out to be the drive rather than the contact:
+    damping was set for a 1 kg rover, so the drive saturated at 0.34 N.m against
+    the ~0.92 N.m needed to scrub 35 kg round.  What remains is the contact
+    model.  It is xfail rather than deleted so that the day Stage 3 closes the
+    rest of the gap, this turns green and says so.
     """
     assert run(sim, 0.0, 40.0)["omega_deg_s"] > 20.0
 

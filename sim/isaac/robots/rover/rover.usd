@@ -64,52 +64,64 @@ over "weeding_rover"
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (10 N.m, the gearbox's
-        # PEAK/stall limit, NOT continuous - continuous is 5 N.m per wheel,
-        # hardware/bom/poc-v3.md) - see config.yaml for why it is not restated here.
+        # damping IS the motor's torque/speed slope, so it - not maxForce -
+        # decides the torque the drive can ask for: effort / velocity from the
+        # URDF's <limit>, 10 N.m / 149.886 deg/s.  maxForce stays where the URDF
+        # put it (10 N.m, the gearbox's PEAK/stall limit, NOT continuous -
+        # continuous is 5 N.m per wheel, hardware/bom/poc-v3.md) - see
+        # config.yaml for why it is not restated here.
         over "wheel_fl"
         {
             uniform token drive:angular:physics:type = "force"
-            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:damping = 0.0667
             float drive:angular:physics:stiffness = 0
             float drive:angular:physics:targetVelocity = 0
         }
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (10 N.m, the gearbox's
-        # PEAK/stall limit, NOT continuous - continuous is 5 N.m per wheel,
-        # hardware/bom/poc-v3.md) - see config.yaml for why it is not restated here.
+        # damping IS the motor's torque/speed slope, so it - not maxForce -
+        # decides the torque the drive can ask for: effort / velocity from the
+        # URDF's <limit>, 10 N.m / 149.886 deg/s.  maxForce stays where the URDF
+        # put it (10 N.m, the gearbox's PEAK/stall limit, NOT continuous -
+        # continuous is 5 N.m per wheel, hardware/bom/poc-v3.md) - see
+        # config.yaml for why it is not restated here.
         over "wheel_fr"
         {
             uniform token drive:angular:physics:type = "force"
-            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:damping = 0.0667
             float drive:angular:physics:stiffness = 0
             float drive:angular:physics:targetVelocity = 0
         }
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (10 N.m, the gearbox's
-        # PEAK/stall limit, NOT continuous - continuous is 5 N.m per wheel,
-        # hardware/bom/poc-v3.md) - see config.yaml for why it is not restated here.
+        # damping IS the motor's torque/speed slope, so it - not maxForce -
+        # decides the torque the drive can ask for: effort / velocity from the
+        # URDF's <limit>, 10 N.m / 149.886 deg/s.  maxForce stays where the URDF
+        # put it (10 N.m, the gearbox's PEAK/stall limit, NOT continuous -
+        # continuous is 5 N.m per wheel, hardware/bom/poc-v3.md) - see
+        # config.yaml for why it is not restated here.
         over "wheel_rl"
         {
             uniform token drive:angular:physics:type = "force"
-            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:damping = 0.0667
             float drive:angular:physics:stiffness = 0
             float drive:angular:physics:targetVelocity = 0
         }
 
         # Velocity drive: stiffness 0, damping > 0.  With any stiffness at all
         # this becomes a position drive and the wheel fights its own target.
-        # maxForce stays where the URDF put it (10 N.m, the gearbox's
-        # PEAK/stall limit, NOT continuous - continuous is 5 N.m per wheel,
-        # hardware/bom/poc-v3.md) - see config.yaml for why it is not restated here.
+        # damping IS the motor's torque/speed slope, so it - not maxForce -
+        # decides the torque the drive can ask for: effort / velocity from the
+        # URDF's <limit>, 10 N.m / 149.886 deg/s.  maxForce stays where the URDF
+        # put it (10 N.m, the gearbox's PEAK/stall limit, NOT continuous -
+        # continuous is 5 N.m per wheel, hardware/bom/poc-v3.md) - see
+        # config.yaml for why it is not restated here.
         over "wheel_rr"
         {
             uniform token drive:angular:physics:type = "force"
-            float drive:angular:physics:damping = 0.005
+            float drive:angular:physics:damping = 0.0667
             float drive:angular:physics:stiffness = 0
             float drive:angular:physics:targetVelocity = 0
         }
