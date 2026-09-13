@@ -21,62 +21,10 @@ import pytest
 from controller.config import get, load_config
 from controller.motion import RowEstimate
 from perception.row_estimator import RowEstimator, find_valley
-from tests.unit.test_exg import SHAPE, bare_soil
+from tests.harness import LEAF, SHAPE, bare_soil, crop_rows
 
 EXG_FLOOR = 12
 CONF_MIN = 0.25
-
-HALF_SPACING = 80  # furrow centre to crop-row centre, px
-BAND_HALF = 30  # half-width of one crop row, px
-
-LEAF = np.array([70.0, 150.0, 60.0])  # ExG = +170
-
-
-def crop_rows(
-    near_u: float | None = None,
-    far_u: float | None = None,
-    seed: int = 0,
-    shape: tuple[int, int] = SHAPE,
-    missing_left_rows: tuple[int, int] | None = None,
-    right_band_only: bool = False,
-) -> np.ndarray:
-    """Two crop rows on soil, with the furrow running between them.
-
-    ``near_u`` is where the furrow crosses the middle row of the bottom strip
-    and ``far_u`` where it crosses the middle row of the lookahead strip, so a
-    test can state the two numbers the estimator is supposed to recover.
-
-    ``missing_left_rows`` wipes the left crop row over a stretch of image rows:
-    a plant missing mid-row, which is the case that separates a histogram from
-    a line fit.
-    """
-    height, width = shape
-    if near_u is None:
-        near_u = (width - 1) / 2
-    if far_u is None:
-        far_u = near_u
-
-    soil = bare_soil(seed, shape).astype(np.float64)
-    image = soil.copy()
-
-    v_near, v_far = 5 * height / 6, height / 2
-    slope = (far_u - near_u) / (v_far - v_near)
-
-    sides = (1,) if right_band_only else (-1, 1)
-    for v in range(height):
-        centre = near_u + slope * (v - v_near)
-        for side in sides:
-            band = centre + side * HALF_SPACING
-            low = max(int(round(band - BAND_HALF)), 0)
-            high = min(int(round(band + BAND_HALF)), width)
-            if high > low:
-                image[v, low:high] = LEAF
-
-    if missing_left_rows is not None:
-        first, last = missing_left_rows
-        image[first:last, : width // 2] = soil[first:last, : width // 2]
-
-    return np.clip(image, 0, 255).astype(np.uint8)
 
 
 def an_estimator(conf_min: float = CONF_MIN) -> RowEstimator:
@@ -189,6 +137,71 @@ class TestHeadingSign:
         est = an_estimator().estimate(crop_rows(near_u=200, far_u=200))
         assert est.heading_err == pytest.approx(0.0, abs=0.02)
         assert est.lateral_err > 0.2
+
+
+class TestCurvedFurrow:
+    """The second row of README's table: a curve needs no curve to be fitted.
+
+    `top_u` bends the furrow into the parabola through all three stated points
+    instead of the line through two.
+    """
+
+    CENTRE = (SHAPE[1] - 1) / 2
+
+    @pytest.mark.parametrize(
+        "far_u, top_u",
+        [
+            (CENTRE + 10, CENTRE + 50),  # bending right
+            (CENTRE - 10, CENTRE - 50),  # bending left
+            (CENTRE + 20, CENTRE + 90),  # hard right
+            (CENTRE + 25, CENTRE - 15),  # an S-bend, worst case for one fit
+        ],
+    )
+    def test_a_curved_furrow_is_still_valid(self, far_u, top_u):
+        assert an_estimator().estimate(crop_rows(far_u=far_u, top_u=top_u)).valid
+
+    def test_curvature_costs_no_confidence(self):
+        """Prominence is measured within a strip, and a curve is still a clean
+        gap inside one.  A method that fitted the furrow over the whole frame
+        would have to lose confidence here, and would then be least sure
+        exactly where the rover most needs steering."""
+        curved = crop_rows(far_u=self.CENTRE + 20, top_u=self.CENTRE + 90)
+        assert an_estimator().estimate(curved).confidence == pytest.approx(1.0)
+
+    def test_a_curve_bending_right_reads_positive(self):
+        est = an_estimator().estimate(
+            crop_rows(far_u=self.CENTRE + 10, top_u=self.CENTRE + 50)
+        )
+        assert est.heading_err > 0
+
+    def test_a_curve_bending_left_reads_negative(self):
+        est = an_estimator().estimate(
+            crop_rows(far_u=self.CENTRE - 10, top_u=self.CENTRE - 50)
+        )
+        assert est.heading_err < 0
+
+    def test_a_curve_reads_the_same_as_the_line_through_its_two_strips(self):
+        """The claim itself: `heading_err` is a difference between two strips,
+        so what the furrow does *above* the lookahead cannot reach it.  These
+        two frames share near and far and diverge by 25 px at the top of the
+        image, and the estimator cannot tell them apart -- which is the whole
+        of why no curve has to be fitted and no straight line has to hold.
+        """
+        curved = crop_rows(far_u=self.CENTRE + 10, top_u=self.CENTRE + 50)
+        straight = crop_rows(far_u=self.CENTRE + 10)
+
+        assert an_estimator().estimate(curved).heading_err == pytest.approx(
+            an_estimator().estimate(straight).heading_err, abs=0.01
+        )
+
+    def test_a_sharper_curve_reads_as_more_heading(self):
+        gentle = an_estimator().estimate(
+            crop_rows(far_u=self.CENTRE + 10, top_u=self.CENTRE + 50)
+        )
+        hard = an_estimator().estimate(
+            crop_rows(far_u=self.CENTRE + 20, top_u=self.CENTRE + 90)
+        )
+        assert hard.heading_err > gentle.heading_err
 
 
 class TestBareSoil:

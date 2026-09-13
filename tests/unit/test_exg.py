@@ -15,40 +15,9 @@ import pytest
 
 from controller.config import get, load_config
 from perception.exg import exg_index, green_mask, otsu_threshold
+from tests.harness import SHAPE, bare_soil, soil_with_crops
 
 EXG_FLOOR = 12
-SHAPE = (240, 320)  # perception.row_estimator.front_downscale
-
-
-def bare_soil(seed: int = 0, shape: tuple[int, int] = SHAPE) -> np.ndarray:
-    """A frame of soil and nothing else.
-
-    Soil is genuinely ExG-negative -- dry earth is red-dominant -- and its
-    texture is mostly shading, which scales all three channels together and so
-    very nearly cancels in 2G - R - B.  That is the physical reason ExG works
-    at all, and it is what makes the floor a usable guard rather than a number
-    that has to be lucky.
-    """
-    rng = np.random.default_rng(seed)
-    base = np.array([160.0, 120.0, 90.0])  # ExG = 2*120 - 160 - 90 = -10
-
-    shading = rng.uniform(0.55, 1.30, size=(*shape, 1))
-    chroma_noise = rng.normal(0.0, 1.5, size=(*shape, 3))
-
-    image = base * shading + chroma_noise
-    return np.clip(image, 0, 255).astype(np.uint8)
-
-
-def soil_with_crops(seed: int = 0, shape: tuple[int, int] = SHAPE) -> np.ndarray:
-    """Bare soil with two green bands on it, the furrow running between them."""
-    image = bare_soil(seed, shape).astype(np.float64)
-    leaf = np.array([70.0, 150.0, 60.0])  # ExG = 300 - 70 - 60 = +170
-
-    width = shape[1]
-    for centre in (width // 4, 3 * width // 4):
-        image[:, centre - 30 : centre + 30] = leaf
-
-    return np.clip(image, 0, 255).astype(np.uint8)
 
 
 class TestExgIndex:

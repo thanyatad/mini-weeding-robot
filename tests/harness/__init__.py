@@ -7,6 +7,14 @@ one more: two callers need it, the integration tests and the scenario runner.
 """
 
 from tests.harness.bench import BED_LENGTH_MM, Bench, CutWire
+from tests.harness.crop_frames import (
+    LEAF,
+    SHAPE,
+    bare_soil,
+    crop_rows,
+    receding_row,
+    soil_with_crops,
+)
 from tests.harness.fake_loop import FakeLoop, FakeRowSensor, LoopSample
 from tests.harness.recording_rover import RecordingRover
 from tests.harness.row import Row, straight_row
@@ -17,8 +25,14 @@ __all__ = [
     "CutWire",
     "FakeLoop",
     "FakeRowSensor",
+    "LEAF",
     "LoopSample",
     "RecordingRover",
     "Row",
+    "SHAPE",
+    "bare_soil",
+    "crop_rows",
+    "receding_row",
+    "soil_with_crops",
     "straight_row",
 ]

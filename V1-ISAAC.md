@@ -136,13 +136,41 @@ valid       = confidence > conf_min   (ทั้งสองแถบ)
 **เกณฑ์จบ**
 
 ```text
-[ ] ภาพสังเคราะห์ร่องตรง        → lateral_err ≈ 0
-[ ] ร่องเบี่ยงซ้าย/ขวา           → เครื่องหมายถูกต้อง (+ = ร่องอยู่ขวา)
-[ ] ร่องเอียง                    → heading_err มีเครื่องหมายถูกต้อง
-[ ] ภาพดินเปล่า                  → valid = False, green_fraction ต่ำ
-[ ] ต้นหายกลางแถว                → ยัง valid (นี่คือจุดที่ valley ชนะ line fitting)
-[ ] ไม่มี pose ใน perception/    (test_layering ยังไม่คุม dir นี้ — พิจารณาเพิ่ม)
+[x] ภาพสังเคราะห์ร่องตรง        → lateral_err = 0.000
+[x] ร่องเบี่ยงซ้าย/ขวา           → เครื่องหมายถูกต้อง (+ = ร่องอยู่ขวา)
+[x] ร่องเอียง                    → heading_err มีเครื่องหมายถูกต้อง
+[x] ภาพดินเปล่า                  → valid = False, green_fraction = 0.000
+[x] ต้นหายกลางแถว                → ยัง valid (นี่คือจุดที่ valley ชนะ line fitting)
+[x] ไม่มี pose ใน perception/    (test_layering.POSE_FREE_DIRS คุม dir นี้แล้ว)
+[x] ร่องโค้ง                     → อ่านได้เท่าเส้นตรงที่ผ่านสองแถบเดียวกัน (เกินเกณฑ์)
+[x] ลูปปิดได้จริง                 → tests/integration/test_row_from_the_camera.py
 ```
+
+**ที่ทำแล้ว** `perception/cameras.py` (`Frame` · `CameraSet` · `FakeCameraSet`) ·
+`perception/row_estimator.py` (`find_valley` · `RowEstimator`) ·
+`tests/harness/crop_frames.py` (ภาพสังเคราะห์ที่ 3 suite ใช้ร่วมกัน)
+
+`Frame` เป็น frozen dataclass `image` + `timestamp_s` (monotonic) แต่ `estimate()` รับ
+`np.ndarray` — เหตุผลอยู่ที่ [perception/README.md §Frame](perception/README.md) ส่วนคนเช็ค
+`camera_timeout_ms` คือลูป Stage 6 ไม่ใช่ perception (`Event.CAMERA_TIMEOUT` อยู่ใน
+`row_run.FAULT_EVENTS` = ชุดที่ detect นอก control loop)
+
+**⚠️ วัดแล้วได้เรื่อง — `green_fraction_row_end: 0.10` ให้ verdict ตามความเร็วรถ**
+
+estimate กลายเป็น invalid ตอน `green_fraction = 0.113` ซึ่งยังสูงกว่า trip 0.10 อยู่ 0.013
+watchdog มีอีก 3 เฟรมกว่าจะ trip เลยกลายเป็นว่า**ระยะที่รถวิ่งได้ใน 3 เฟรมนั้น**เป็นตัวตัดสิน
+ว่าสุดร่องจะถูกอ่านเป็นอะไร วัดจากลูปจริง (frame เดียวกัน ต่างกันแค่ความเร็วเข้าหา):
+
+```text
+0.01 ของความสูงเฟรม/เฟรม  →  ERROR(row_lost)          ← ผิด จบแถวปกติแต่ขึ้น fault
+0.02                      →  ERROR(row_lost)          ← ผิด
+0.03                      →  STOPPED(row_end_suspected)
+0.05                      →  STOPPED(row_end_suspected)
+```
+
+**ไม่ได้แก้ config** ตามกฎข้อ 7 — ตัดสินจริงต้องใช้เฟรม render ที่มีพืชจริง คือ
+`row_end.yaml` คู่กับ `crop_gap_midrow.yaml` ที่ Stage 7 ซึ่งเขียนไว้อยู่แล้วว่าต้องผ่านทั้งคู่
+ตอนนี้มี test ล็อกพฤติกรรมปัจจุบันไว้ พอ threshold ถูกตัดสินแล้วมันจะ fail พร้อมเหตุผล
 
 ---
 
